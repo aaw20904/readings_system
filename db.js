@@ -4,7 +4,7 @@ const mysqlPromise = require('mysql2/promise');
 
 class MysqlLayer {
     #bdPool;
-      constructor(par={basename:"basename", password:"psw", user:"usr",host:"host"}){
+      constructor(par={basename:"name_of_database", password:"psw", user:"usr",host:"host"}){
           this.#bdPool = mysqlPromise.createPool({
             host: par.host,
             user: par.user,
@@ -25,16 +25,16 @@ class MysqlLayer {
          try{
               await connection.beginTransaction();
 
-                let result = await connection.query(
+                 await connection.query(
                     "CREATE TABLE IF NOT EXISTS `user_mail` ("+
                         " `email` VARCHAR(45) NOT NULL, "+
                         " `user_id` BIGINT UNSIGNED NULL AUTO_INCREMENT," +
                         " PRIMARY KEY (`email`),"+
                         " UNIQUE INDEX `user_id_UNIQUE` (`user_id` ASC) VISIBLE);"
                 );
-                result = result[0];
+               
 
-                result = await connection.query(
+                 connection.query(
                     "CREATE TABLE IF NOT EXISTS `users` ("+
                             " `user_id` BIGINT UNSIGNED NOT NULL,"+
                             " `passw` BLOB NULL, "+
@@ -52,7 +52,7 @@ class MysqlLayer {
                             " ON UPDATE NO ACTION);"
                 );
 
-                await connection.query("CREATE TABLE IF NOT EXISTS`areas` ("+
+                await connection.query("CREATE TABLE IF NOT EXISTS `areas` ("+
                              "`area_id` BIGINT UNSIGNED NOT NULL, "+
                             "`area` VARCHAR(32) NULL,"+
                             "PRIMARY KEY (`area_id`),"+
@@ -114,33 +114,85 @@ class MysqlLayer {
                             " CONSTRAINT `re_user_id` " + 
                             " FOREIGN KEY (`user_id`) " + 
                             " REFERENCES `my_bot`.`users` (`user_id`) " + 
-                            " ON DELETE NO ACTION " + 
-                            " ON UPDATE NO ACTION, " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE , " + 
                             " CONSTRAINT `re_city_id` " + 
                             " FOREIGN KEY (`city_id`) " + 
                             " REFERENCES `my_bot`.`cities` (`city_id`) " + 
-                            " ON DELETE NO ACTION " + 
-                            " ON UPDATE NO ACTION, " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE , " + 
                             " CONSTRAINT `re_village_id` " + 
                             " FOREIGN KEY (`village_id`) " + 
                             " REFERENCES `my_bot`.`villages` (`village_id`) " + 
-                            " ON DELETE NO ACTION " + 
-                            " ON UPDATE NO ACTION, " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE, " + 
                             " CONSTRAINT `re_region_id` " + 
                             " FOREIGN KEY (`region_id`) " + 
                             " REFERENCES `my_bot`.`regions` (`region_id`) " + 
-                            " ON DELETE NO ACTION " + 
-                            " ON UPDATE NO ACTION, " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE, " + 
                             " CONSTRAINT `re_area_id` " + 
                             " FOREIGN KEY (`area_id`) " + 
                             " REFERENCES `my_bot`.`areas` (`area_id`) " + 
-                            " ON DELETE NO ACTION " + 
-                            " ON UPDATE NO ACTION, " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE, " + 
                             " CONSTRAINT `re_street_id` " + 
                             " FOREIGN KEY (`street_id`) " + 
                             " REFERENCES `my_bot`.`streets` (`street_id`) " + 
-                            " ON DELETE NO ACTION " + 
+                            " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE); ");
+
+                await connection.query(" CREATE TABLE IF NOT EXISTS `counter` ( " + 
+                            " `counter_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `factory_num` BIGINT UNSIGNED NULL, " + 
+                            " `estate_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `verified` BIGINT UNSIGNED NULL, " + 
+                            " `counter_type` BIGINT UNSIGNED NULL, " + 
+                            " PRIMARY KEY (`counter_id`), " + 
+                            " INDEX `co_estate_id_idx` (`estate_id` ASC) VISIBLE, " + 
+                            " INDEX `co_counter_type_idx` (`counter_type` ASC) VISIBLE, " + 
+                            " CONSTRAINT `co_estate_id` " + 
+                            " FOREIGN KEY (`estate_id`) " + 
+                            " REFERENCES `my_bot`.`real_estate` (`estate_id`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE, " + 
+                            " CONSTRAINT `co_counter_type` " + 
+                            " FOREIGN KEY (`counter_type`) " + 
+                            " REFERENCES `my_bot`.`counter_type` (`counter_type`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE); ");
+
+                await connection.query(" CREATE TABLE  IF NOT EXISTS `readings` ( " + 
+                            " `read_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " `counter_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `readings` BIGINT UNSIGNED NULL, " + 
+                            " `time_s` BIGINT UNSIGNED NULL, " + 
+                            " PRIMARY KEY (`read_id`), " + 
+                            " INDEX `rd_counter_id_idx` (`counter_id` ASC) VISIBLE, " + 
+                            " INDEX `rd_time_s` (`time_s` ASC) VISIBLE, " + 
+                            " CONSTRAINT `rd_counter_id` " + 
+                            " FOREIGN KEY (`counter_id`) " + 
+                            " REFERENCES `my_bot`.`counter` (`counter_id`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE); ");
+                
+                await connection.query(" CREATE TABLE   IF NOT EXISTS `counter_provider` ( " + 
+                            " `counter_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `provider_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `account` BIGINT UNSIGNED NOT NULL, " + 
+                            " INDEX `cop_cnt_id_idx` (`counter_id` ASC) VISIBLE, " + 
+                            " INDEX `cop_prov_id_idx` (`provider_id` ASC) VISIBLE, " + 
+                            " CONSTRAINT `cop_cnt_id` " + 
+                            " FOREIGN KEY (`counter_id`) " + 
+                            " REFERENCES `my_bot`.`counter` (`counter_id`) " + 
+                            " ON DELETE NO ACTION " + 
+                            " ON UPDATE NO ACTION, " + 
+                            " CONSTRAINT `cop_prov_id` " + 
+                            " FOREIGN KEY (`provider_id`) " + 
+                            " REFERENCES `my_bot`.`providers` (`provider_id`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE); ");
+
 
                 await connection.commit();
             
@@ -150,6 +202,7 @@ class MysqlLayer {
             throw new Error(e);
         }finally{
             connection.release();
+            return true;
         }
         
 
@@ -160,76 +213,6 @@ class MysqlLayer {
     async closeDatabase(){
         return await this.#bdPool.end();
      }
-    ///***************OK! tested!! */
-     async createNewUser (par={name:"",password:"", email:"example@mail.com", picture:"123", passw:0, salt:0, phone:"911"}) {
-        let connection, generated_identifier;
-         
-            connection = await this.#bdPool.getConnection();
-            await connection.beginTransaction();
-            try{
-             //firstly fill a user_mail table:
-                generated_identifier = await  connection.query('INSERT INTO user_mail ( email) VALUES (?)', [par.email]);
-                //get generated Id by system
-                generated_identifier = generated_identifier[0].insertId;
-                //write user info using gnerated by MySQL user_id:
-                await connection.query('INSERT INTO users ( user_id, passw, picture, uname,  salt, phone) VALUES (?, ?, ?, ?, ?, ?)',
-                                          [generated_identifier, par.password, par.picture, par.name, par.salt, par.phone]);
-                //apply 
-                await connection.commit();
-                
-            }catch(err){
-                 let myErr = new Error(err);
-               //has a user already exists?
-                if(err.errno === 1062){
-                    myErr.alrEx = true;
-                } else{
-                    myErr.alrEx =false;
-                }
-                
-                await connection.rollback();
-               
-                
-                throw myErr;
-            }finally{
-                connection.release();
-            }
-  
-     }
-
-   
-     //OK!****************** tested
-    async getUserByEmail (email) {
-        let connection = await this.#bdPool.getConnection();
-        let result = await connection.query(
-            `SELECT * FROM users INNER JOIN user_mail WHERE user_mail.email="${email}" AND users.user_id=user_mail.user_id;`
-        );
-        connection.release();
-        return result[0][0];
-    }
-///OK!*******tested
-    async incrementFailLogins (user_id) {
-        let connection = await this.#bdPool.getConnection();
-        let result = await connection.query(`UPDATE users SET fail_a=fail_a+1, fail_date=UNIX_TIMESTAMP()*1000 WHERE user_id=?;`,[ user_id]);
-        connection.release();
-        if(result.length >= 1){
-            return result[0].affectedRows;
-        }else {
-            return false;
-        }
-    }
-
-//OK!*****tested
-    async  clearUserBlocking (user_id) {
-        let connection = await this.#bdPool.getConnection();
-        let result = await  connection.query(`UPDATE users SET fail_a=0 WHERE user_id=? ;`,[user_id]);
-        connection.release();
-        if(result.length >= 1){
-            return result[0].affectedRows;
-        }else {
-            return false;
-        }
-
-    }
    
 
 }
