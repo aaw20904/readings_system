@@ -1,4 +1,5 @@
 const mysql = require('mysql2'); //database mamnagement system MySQL---------------------------
+const fs = require("fs").promises;
 /// making database    https://decentralization.gov.ua/api
 const mysqlPromise = require('mysql2/promise');
 
@@ -49,47 +50,47 @@ class MysqlLayer {
                             " FOREIGN KEY (`user_id`) "+
                             " REFERENCES `my_bot`.`user_mail` (`user_id`)" +
                             " ON DELETE CASCADE "+
-                            " ON UPDATE NO ACTION);"
+                            " ON UPDATE CASCADE);"
                 );
 
                 await connection.query("CREATE TABLE IF NOT EXISTS `areas` ("+
-                             "`area_id` BIGINT UNSIGNED NOT NULL, "+
+                             "`area_id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL, "+
                             "`area` VARCHAR(32) NULL,"+
                             "PRIMARY KEY (`area_id`),"+
                             "UNIQUE INDEX `area_UNIQUE` (`area` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE IF NOT EXISTS `regions` ("+
-                            "`region_id` BIGINT UNSIGNED NOT NULL,"+
+                            "`region_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
                             "`region` VARCHAR(32) NULL,"+
                             " PRIMARY KEY (`region_id`),"+
                             " UNIQUE INDEX `region_UNIQUE` (`region` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE IF NOT EXISTS `streets` ("+
-                            "`street_id` BIGINT UNSIGNED NOT NULL,"+
+                            "`street_id` BIGINT UNSIGNED  AUTO_INCREMENT  NOT NULL,"+
                             "`street` VARCHAR(32) NULL, "+
                             " PRIMARY KEY (`street_id`), "+
                             " UNIQUE INDEX `street_UNIQUE` (`street` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE  IF NOT EXISTS `villages` ("+
-                            " `village_id` BIGINT UNSIGNED NOT NULL,"+
+                            " `village_id` BIGINT UNSIGNED  AUTO_INCREMENT NOT NULL,"+
                             " `village` VARCHAR(32) NULL, "+
                             " PRIMARY KEY (`village_id`), "+
                             " UNIQUE INDEX `villages_UNIQUE` (`village` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE  IF NOT EXISTS `cities` ("+
-                            " `city_id` BIGINT UNSIGNED NOT NULL,"+
+                            " `city_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
                             " `city` VARCHAR(32) NULL, "+
                             " PRIMARY KEY (`city_id`),"+
                             " UNIQUE INDEX `city_UNIQUE` (`city` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE  IF NOT EXISTS `providers` ("+
-                            "`provider_id` BIGINT UNSIGNED NOT NULL,"+
+                            "`provider_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
                             "`provider` VARCHAR(32) NULL, "+
                             " PRIMARY KEY (`provider_id`),"+
                             " UNIQUE INDEX `provider_UNIQUE` (`provider` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE IF NOT EXISTS `counter_type` ("+
-                            " `counter_type` BIGINT UNSIGNED NOT NULL, "+
+                            " `counter_type` BIGINT UNSIGNED  AUTO_INCREMENT  NOT NULL, "+
                             " `descr` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`counter_type`), "+
                             " UNIQUE INDEX `descr_UNIQUE` (`descr` ASC) VISIBLE);");
@@ -206,6 +207,55 @@ class MysqlLayer {
         }
         
 
+    }
+    //--'https://overpass-api.de/api/interpreter'  , OpenStreetMap
+    //----Admin`s utility: export names of cities into the DB:
+    async _utilWriteCities(filename="cities_ua.json"){
+        let data;
+        try{
+            data = await fs.readFile(filename,{encoding:"utf8"});
+        }catch(e){
+            throw new Error(e);
+        }
+        //get a connection
+        let connection = await this.#bdPool.getConnection();
+        //converting to Object
+        let mainObject = JSON.parse(data);
+       for (const element of mainObject) {
+        ///write into DB:
+          await connection.query(`INSERT INTO cities (city) VALUES (?)`,[element.tags.name])
+       }
+
+       connection.release();
+        
+    }
+
+        //--'https://overpass-api.de/api/interpreter'  , OpenStreetMap
+    //----Admin`s utility: export names of cities into the DB:
+    async _utilWriteVillages(filename="villages_ua.json"){
+        let data;
+        try {
+        data = await fs.readFile(filename,{encoding:"utf8"});
+        } catch(e) {
+            throw new Error(e);
+        }
+        //get a connection
+        let connection = await this.#bdPool.getConnection();
+        //converting to Object
+        let mainObject = JSON.parse(data);
+       for (const element of mainObject) {
+        ///write into DB:
+            try{
+                await connection.query(`INSERT INTO villages (village) VALUES (?)`,[element.tags.name])
+            }catch(e){
+                //there are villages with the same name
+                console.log(e.errno);
+            }
+          
+       }
+
+       connection.release();
+ 
     }
 
    

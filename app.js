@@ -5,6 +5,7 @@ async function main(){
     let dbL = new dbLayer.MysqlLayer({basename:"my_bot",password:"65535258",user:"root",host:"localhost"});
 
 await dbL.initDb();
+await dbL._utilWriteVillages()
 await dbL.closeDatabase();
 }
 
