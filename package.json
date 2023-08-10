@@ -2,7 +2,7 @@
   "name": "readings_system",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "grabber.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.4.0",
     "mysql2": "^3.6.0"
   }
 }
