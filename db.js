@@ -1,5 +1,5 @@
 const mysql = require('mysql2'); //database mamnagement system MySQL---------------------------
-
+/// making database    https://decentralization.gov.ua/api
 const mysqlPromise = require('mysql2/promise');
 
 class MysqlLayer {
