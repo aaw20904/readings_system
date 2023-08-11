@@ -1,6 +1,9 @@
 const mysql = require('mysql2'); //database mamnagement system MySQL---------------------------
 const fs = require("fs").promises;
-/// making database    https://decentralization.gov.ua/api
+const simpleFs = require("fs");
+var xml2js = require('xml2js');
+var iconv = require('iconv-lite');
+/// making database    https://data.gov.ua/dataset/a2d6c060-e7e6-4471-ac67-42cfa1742a19
 const mysqlPromise = require('mysql2/promise');
 
 class MysqlLayer {
@@ -407,6 +410,16 @@ class MysqlLayer {
 
        connection.release();
  
+    }
+
+    async _utilTest(fname){
+        
+        let xmlBuffer = await fs.readFile(fname);
+        let xmlData = iconv.decode(xmlBuffer,"Windows-1251");
+        var parser = new xml2js.Parser(/* options */);
+        let result = await parser.parseStringPromise(xmlData);
+        await fs.writeFile("28-ex.json", JSON.stringify(result.DATA.RECORD));
+        console.log(new Date().toLocaleTimeString());
     }
 
 
