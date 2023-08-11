@@ -20,11 +20,12 @@ fs.readFile(filename, 'utf8', (err, data) => {
 
   // Save the result to the "result.txt" file
   const resultFilename = 'result.txt';
-  fs.writeFile(resultFilename, result, 'utf8', (err) => {
-    if (err) {
-      console.error('Error writing to the file:', err);
-      return;
-    }
-    console.log(`Result saved to ${resultFilename}`);
+  fs.writeFile (resultFilename, result, 'utf8', (err) => {
+      if (err) {
+        console.error('Error writing to the file:', err);
+        return;
+      }
+      console.log(`Result saved to ${resultFilename}`);
   });
+  //*************
 });

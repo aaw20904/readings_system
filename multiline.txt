@@ -1,16 +1,5 @@
-CREATE TABLE `my_bot`.`counter_provider` (
-  `counter_id` BIGINT UNSIGNED NOT NULL,
-  `provider_id` BIGINT UNSIGNED NOT NULL,
-  `account` BIGINT UNSIGNED NOT NULL,
-  INDEX `cop_cnt_id_idx` (`counter_id` ASC) VISIBLE,
-  INDEX `cop_prov_id_idx` (`provider_id` ASC) VISIBLE,
-  CONSTRAINT `cop_cnt_id`
-    FOREIGN KEY (`counter_id`)
-    REFERENCES `my_bot`.`counter` (`counter_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `cop_prov_id`
-    FOREIGN KEY (`provider_id`)
-    REFERENCES `my_bot`.`providers` (`provider_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE);
+CREATE TABLE `my_bot`.`district` (
+  `district_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `district` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`district_id`),
+  UNIQUE INDEX `district_UNIQUE` (`district` ASC) VISIBLE);

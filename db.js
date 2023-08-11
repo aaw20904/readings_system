@@ -40,11 +40,11 @@ class MysqlLayer {
                             " `user_id` BIGINT UNSIGNED NOT NULL,"+
                             " `passw` BLOB NULL, "+
                             " `picture` BLOB NULL, "+
-                            " `uname` VARCHAR(32) NULL, "+
+                            " `uname` VARCHAR(45) NULL, "+
                             " `salt` BLOB NULL, "+
                             " `fail_a` INT DEFAULT 0, "+
                             " `fail_date`BIGINT  UNSIGNED DEFAULT 0, "+
-                            " `phone` VARCHAR(32) NULL, "+
+                            " `phone` VARCHAR(45) NULL, "+
                         " PRIMARY KEY (`user_id`),"+
                         // " CONSTRAINT `fk_user_id_user_m` "+
                             " FOREIGN KEY (`user_id`) "+
@@ -53,39 +53,46 @@ class MysqlLayer {
                             " ON UPDATE CASCADE);"
                 );
 
-                await connection.query("CREATE TABLE IF NOT EXISTS `areas` ("+
+              /*  await connection.query("CREATE TABLE IF NOT EXISTS `areas` ("+
                              "`area_id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL, "+
-                            "`area` VARCHAR(32) NULL,"+
+                            "`area` VARCHAR(45) NULL,"+
                             "PRIMARY KEY (`area_id`),"+
-                            "UNIQUE INDEX `area_UNIQUE` (`area` ASC) VISIBLE);");
+                            "UNIQUE INDEX `area_UNIQUE` (`area` ASC) VISIBLE);");*/
+                
+                await connection.query(" CREATE TABLE IF NOT EXISTS `districts` ( " + 
+                        " `district_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                        " `district` VARCHAR(45) NOT NULL, " + 
+                        " PRIMARY KEY (`district_id`), " + 
+                        " UNIQUE INDEX `district_UNIQUE` (`district` ASC) VISIBLE); ");
+
 
                 await connection.query("CREATE TABLE IF NOT EXISTS `regions` ("+
                             "`region_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
-                            "`region` VARCHAR(32) NULL,"+
+                            "`region` VARCHAR(45) NULL,"+
                             " PRIMARY KEY (`region_id`),"+
                             " UNIQUE INDEX `region_UNIQUE` (`region` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE IF NOT EXISTS `streets` ("+
                             "`street_id` BIGINT UNSIGNED  AUTO_INCREMENT  NOT NULL,"+
-                            "`street` VARCHAR(32) NULL, "+
+                            "`street` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`street_id`), "+
                             " UNIQUE INDEX `street_UNIQUE` (`street` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE  IF NOT EXISTS `villages` ("+
                             " `village_id` BIGINT UNSIGNED  AUTO_INCREMENT NOT NULL,"+
-                            " `village` VARCHAR(32) NULL, "+
+                            " `village` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`village_id`), "+
                             " UNIQUE INDEX `villages_UNIQUE` (`village` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE  IF NOT EXISTS `cities` ("+
                             " `city_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
-                            " `city` VARCHAR(32) NULL, "+
+                            " `city` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`city_id`),"+
                             " UNIQUE INDEX `city_UNIQUE` (`city` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE  IF NOT EXISTS `providers` ("+
                             "`provider_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
-                            "`provider` VARCHAR(32) NULL, "+
+                            "`provider` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`provider_id`),"+
                             " UNIQUE INDEX `provider_UNIQUE` (`provider` ASC) VISIBLE);");
 
@@ -96,12 +103,12 @@ class MysqlLayer {
                             " UNIQUE INDEX `descr_UNIQUE` (`descr` ASC) VISIBLE);");
                             
                 await connection.query(" CREATE TABLE IF NOT EXISTS `real_estate` ( " + 
-                            " `estate_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `estate_id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL, " + 
                             " `user_id` BIGINT UNSIGNED NULL, " + 
                             " `city_id` BIGINT UNSIGNED NULL, " + 
                             " `village_id` BIGINT UNSIGNED NULL, " + 
                             " `region_id` BIGINT UNSIGNED NULL, " + 
-                            " `area_id` BIGINT UNSIGNED NULL, " + 
+                            " `district_id` BIGINT UNSIGNED NULL, " + 
                             " `street_id` BIGINT UNSIGNED NULL, " + 
                             " `house` VARCHAR(16) NULL, " + 
                             " `flat` INT UNSIGNED NULL, " + 
@@ -110,7 +117,7 @@ class MysqlLayer {
                             " INDEX `re_city_id_idx` (`city_id` ASC) VISIBLE, " + 
                             " INDEX `re_village_id_idx` (`village_id` ASC) VISIBLE, " + 
                             " INDEX `re_region_id_idx` (`region_id` ASC) VISIBLE, " + 
-                            " INDEX `re_area_id_idx` (`area_id` ASC) VISIBLE, " + 
+                            " INDEX `re_district_id_idx` (`district_id` ASC) VISIBLE, " + 
                             " INDEX `re_street_id_idx` (`street_id` ASC) VISIBLE, " + 
                             " CONSTRAINT `re_user_id` " + 
                             " FOREIGN KEY (`user_id`) " + 
@@ -132,9 +139,9 @@ class MysqlLayer {
                             " REFERENCES `my_bot`.`regions` (`region_id`) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE, " + 
-                            " CONSTRAINT `re_area_id` " + 
-                            " FOREIGN KEY (`area_id`) " + 
-                            " REFERENCES `my_bot`.`areas` (`area_id`) " + 
+                            " CONSTRAINT `re_district_id` " + 
+                            " FOREIGN KEY (`district_id`) " + 
+                            " REFERENCES `my_bot`.`districts` (`district_id`) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE, " + 
                             " CONSTRAINT `re_street_id` " + 
@@ -144,7 +151,7 @@ class MysqlLayer {
                             " ON UPDATE CASCADE); ");
 
                 await connection.query(" CREATE TABLE IF NOT EXISTS `counter` ( " + 
-                            " `counter_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `counter_id` BIGINT UNSIGNED  AUTO_INCREMENT NOT NULL, " + 
                             " `factory_num` BIGINT UNSIGNED NULL, " + 
                             " `estate_id` BIGINT UNSIGNED NOT NULL, " + 
                             " `verified` BIGINT UNSIGNED NULL, " + 
@@ -194,6 +201,7 @@ class MysqlLayer {
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE); ");
 
+              
 
                 await connection.commit();
             
@@ -232,10 +240,11 @@ class MysqlLayer {
 
         //--'https://overpass-api.de/api/interpreter'  , OpenStreetMap
     //----Admin`s utility: export names of cities into the DB:
-    async _utilWriteVillages(filename="villages_ua.json"){
+    async _utilWriteVillages (filename="villages_ua.json") {
+        let duplicated = 0;
         let data;
         try {
-        data = await fs.readFile(filename,{encoding:"utf8"});
+            data = await fs.readFile(filename,{encoding:"utf8"});
         } catch(e) {
             throw new Error(e);
         }
@@ -249,20 +258,163 @@ class MysqlLayer {
                 await connection.query(`INSERT INTO villages (village) VALUES (?)`,[element.tags.name])
             }catch(e){
                 //there are villages with the same name
-                console.log(e.errno);
+                if(e.errno == 1062){
+                    duplicated++;
+                    process.stdout.write(`duplicated: ${duplicated}        \r`);
+                }
+            }     
+       }
+       connection.release();
+    }
+
+        //--'https://overpass-api.de/api/interpreter'  , OpenStreetMap
+    //----Admin`s utility: export names of cities into the DB:
+    async _utilWriteVillagesStreets(filename="villages_streets.json"){
+        let duplicated = 0;
+        let data;
+        try {
+        data = await fs.readFile(filename,{encoding:"utf8"});
+        } catch(e) {
+            throw new Error(e);
+        }
+        //get a connection
+        let connection = await this.#bdPool.getConnection();
+        //converting to Object
+        let mainObject = JSON.parse(data);
+       for (const element of mainObject) {
+            if (element.type == "way") {
+                ///write into DB:
+                try {
+                    if(element.tags.name){
+                        await connection.query(`INSERT INTO streets (street) VALUES (?)`,[element.tags.name])
+                    }
+                    
+                } catch(e) {
+                    //there are villages with the same name
+                     if (e.errno == 1062) {
+                            duplicated++;
+                            process.stdout.write(`duplicated: ${duplicated}        \r`);
+                     }
+                }
             }
-          
        }
 
        connection.release();
  
     }
 
-   
+//----Admin`s utility: export names of cities into the DB:
+    async _utilWriteCitiesStreets(filename="cities_streets.json"){
+        let duplicated = 0;
+        let data;
+        try {
+        data = await fs.readFile(filename,{encoding:"utf8"});
+        } catch(e) {
+            throw new Error(e);
+        }
+        //get a connection
+        let connection = await this.#bdPool.getConnection();
+        //converting to Object
+        let mainObject = JSON.parse(data);
+       for (const element of mainObject) {
+            if (element.type == "way") {
+                ///write into DB:
+                try {
+                    if(element.tags.name){
+                        await connection.query(`INSERT INTO streets (street) VALUES (?)`,[element.tags.name])
+                    }
+                    
+                } catch(e) {
+                    //there are villages with the same name
+                     if (e.errno == 1062) {
+                            duplicated++;
+                            process.stdout.write(`duplicated: ${duplicated}        \r`);
+                     }
+                }
+            }
+       }
+
+       connection.release();
+ 
+    }
+//******** */
+
+//----Admin`s utility: export names of cities into the DB:
+    async _utilWriteRegions(filename="regions_ua.json"){
+        let duplicated = 0;
+        let data;
+        try {
+        data = await fs.readFile(filename,{encoding:"utf8"});
+        } catch(e) {
+            throw new Error(e);
+        }
+        //get a connection
+        let connection = await this.#bdPool.getConnection();
+        //converting to Object
+        let mainObject = JSON.parse(data);
+       for (const element of mainObject.elements) {
+            if (element.tags["ISO3166-2"]) {
+                ///write into DB:
+                try {
+                    if(element.tags.name){
+                        await connection.query(`INSERT INTO regions (region) VALUES (?)`,[element.tags.name])
+                    }
+                    
+                } catch(e) {
+                    //there are villages with the same name
+                     if (e.errno == 1062) {
+                            duplicated++;
+                            process.stdout.write(`duplicated: ${duplicated}        \r`);
+                     }
+                }
+            }
+       }
+
+       connection.release();
+ 
+    }
+
+    //----Admin`s utility: export names of cities into the DB:
+    async _utilWriteDistricts(filename="districts_ua.json"){
+        let duplicated = 0;
+        let data;
+        try {
+        data = await fs.readFile(filename,{encoding:"utf8"});
+        } catch(e) {
+            throw new Error(e);
+        }
+        //get a connection
+        let connection = await this.#bdPool.getConnection();
+        //converting to Object
+        let mainObject = JSON.parse(data);
+       for (const element of mainObject.elements) {
+            if ( ! element.tags["addr:country"]) {
+                ///write into DB:
+                try {
+                    if(element.tags.name){
+                        await connection.query(`INSERT INTO districts (district) VALUES (?)`,[element.tags.name])
+                    }
+                    
+                } catch(e) {
+                    //there are villages with the same name
+                     if (e.errno == 1062) {
+                            duplicated++;
+                            process.stdout.write(`duplicated: ${duplicated}        \r`);
+                     }
+                }
+            }
+       }
+
+       connection.release();
+ 
+    }
+
+
+
     //********************OK! tested
     async closeDatabase(){
         return await this.#bdPool.end();
-     }
+    }
    
 
 }
