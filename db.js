@@ -81,7 +81,7 @@ class MysqlLayer {
                             " PRIMARY KEY (`street_id`), "+
                             " UNIQUE INDEX `street_UNIQUE` (`street` ASC) VISIBLE);");
 
-                await connection.query("CREATE TABLE  IF NOT EXISTS `villages` ("+
+              /*  await connection.query("CREATE TABLE  IF NOT EXISTS `villages` ("+
                             " `village_id` BIGINT UNSIGNED  AUTO_INCREMENT NOT NULL,"+
                             " `village` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`village_id`), "+
@@ -91,7 +91,7 @@ class MysqlLayer {
                             " `city_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
                             " `city` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`city_id`),"+
-                            " UNIQUE INDEX `city_UNIQUE` (`city` ASC) VISIBLE);");
+                            " UNIQUE INDEX `city_UNIQUE` (`city` ASC) VISIBLE);");*/
 
                 await connection.query("CREATE TABLE  IF NOT EXISTS `providers` ("+
                             "`provider_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
@@ -104,6 +104,8 @@ class MysqlLayer {
                             " `descr` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`counter_type`), "+
                             " UNIQUE INDEX `descr_UNIQUE` (`descr` ASC) VISIBLE);");
+                            ///***new */
+                await connection.query("")
                             
                 await connection.query(" CREATE TABLE IF NOT EXISTS `real_estate` ( " + 
                             " `estate_id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL, " + 
@@ -416,13 +418,14 @@ class MysqlLayer {
         
         let xmlBuffer = await fs.readFile(fname);
         let xmlData = iconv.decode(xmlBuffer,"Windows-1251");
-        var parser = new xml2js.Parser(/* options */);
-        let result = await parser.parseStringPromise(xmlData);
+        //changing &apos; to ̕ 
+        const outputString = xmlData.replace(/&apos;/g, "'");
+        var parser = new xml2js.Parser({ emptyTag: null });
+        let result = await parser.parseStringPromise(outputString);
         await fs.writeFile("28-ex.json", JSON.stringify(result.DATA.RECORD));
         console.log(new Date().toLocaleTimeString());
     }
-
-
+ 
 
     //********************OK! tested
     async closeDatabase(){
