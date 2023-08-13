@@ -105,64 +105,79 @@ class MysqlLayer {
                             " PRIMARY KEY (`counter_type`), "+
                             " UNIQUE INDEX `descr_UNIQUE` (`descr` ASC) VISIBLE);");
                             ///***new */
-                await connection.query("")
-                            
-                await connection.query(" CREATE TABLE IF NOT EXISTS `real_estate` ( " + 
-                            " `estate_id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL, " + 
-                            " `user_id` BIGINT UNSIGNED NULL, " + 
-                            " `city_id` BIGINT UNSIGNED NULL, " + 
-                            " `village_id` BIGINT UNSIGNED NULL, " + 
-                            " `region_id` BIGINT UNSIGNED NULL, " + 
-                            " `district_id` BIGINT UNSIGNED NULL, " + 
-                            " `street_id` BIGINT UNSIGNED NULL, " + 
-                            " `house` VARCHAR(16) NULL, " + 
-                            " `flat` INT UNSIGNED NULL, " + 
-                            " PRIMARY KEY (`estate_id`), " + 
-                            " INDEX `re_user_id_idx` (`user_id` ASC) VISIBLE, " + 
-                            " INDEX `re_city_id_idx` (`city_id` ASC) VISIBLE, " + 
-                            " INDEX `re_village_id_idx` (`village_id` ASC) VISIBLE, " + 
-                            " INDEX `re_region_id_idx` (`region_id` ASC) VISIBLE, " + 
-                            " INDEX `re_district_id_idx` (`district_id` ASC) VISIBLE, " + 
-                            " INDEX `re_street_id_idx` (`street_id` ASC) VISIBLE, " + 
-                            " CONSTRAINT `re_user_id` " + 
-                            " FOREIGN KEY (`user_id`) " + 
-                            " REFERENCES `my_bot`.`users` (`user_id`) " + 
-                            " ON DELETE CASCADE " + 
-                            " ON UPDATE CASCADE , " + 
-                            " CONSTRAINT `re_city_id` " + 
-                            " FOREIGN KEY (`city_id`) " + 
-                            " REFERENCES `my_bot`.`cities` (`city_id`) " + 
-                            " ON DELETE CASCADE " + 
-                            " ON UPDATE CASCADE , " + 
-                            " CONSTRAINT `re_village_id` " + 
-                            " FOREIGN KEY (`village_id`) " + 
-                            " REFERENCES `my_bot`.`villages` (`village_id`) " + 
+
+                await connection.query(" CREATE TABLE IF NOT EXISTS `type_of_localities` ( " + 
+                            " `loc_type` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " `descr` VARCHAR(45) NULL, " + 
+                            " PRIMARY KEY (`loc_type`), " + 
+                            " UNIQUE INDEX `descr_UNIQUE` (`descr` ASC) VISIBLE); ");
+
+                await connection.query(" CREATE TABLE IF NOT EXISTS `names_of_localities` ( " + 
+                            " `locality_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " `locality` VARCHAR(45) NULL, " + 
+                            " PRIMARY KEY (`locality_id`), " + 
+                            " UNIQUE INDEX `locality_UNIQUE` (`locality` ASC) VISIBLE); ");
+                        
+                await connection.query(" CREATE TABLE IF NOT EXISTS `locations` ( " + 
+                            " `locality_key` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " `locality_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `district_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `region_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `loc_type` BIGINT UNSIGNED NOT NULL, " + 
+                            " PRIMARY KEY (`locality_key`), " + 
+                            " INDEX `loc_district_id_idx` (`district_id` ASC) VISIBLE, " + 
+                            " INDEX `loc_region_id_idx` (`region_id` ASC) VISIBLE, " + 
+                            " INDEX `loc_loc_type_idx` (`loc_type` ASC) VISIBLE, " + 
+                            " CONSTRAINT `loc_locality_id` " + 
+                            " FOREIGN KEY (`locality_key`) " + 
+                            " REFERENCES `my_bot`.`names_of_localities` (`locality_id`) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE, " + 
-                            " CONSTRAINT `re_region_id` " + 
-                            " FOREIGN KEY (`region_id`) " + 
-                            " REFERENCES `my_bot`.`regions` (`region_id`) " + 
-                            " ON DELETE CASCADE " + 
-                            " ON UPDATE CASCADE, " + 
-                            " CONSTRAINT `re_district_id` " + 
+                            " CONSTRAINT `loc_district_id` " + 
                             " FOREIGN KEY (`district_id`) " + 
                             " REFERENCES `my_bot`.`districts` (`district_id`) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE, " + 
-                            " CONSTRAINT `re_street_id` " + 
-                            " FOREIGN KEY (`street_id`) " + 
-                            " REFERENCES `my_bot`.`streets` (`street_id`) " + 
+                            " CONSTRAINT `loc_region_id` " + 
+                            " FOREIGN KEY (`region_id`) " + 
+                            " REFERENCES `my_bot`.`regions` (`region_id`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE, " + 
+                            " CONSTRAINT `loc_loc_type` " + 
+                            " FOREIGN KEY (`loc_type`) " + 
+                            " REFERENCES `my_bot`.`type_of_localities` (`loc_type`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE); ")
+
+                            
+                await connection.query(" CREATE TABLE IF NOT EXISTS `real_estate` ( " + 
+                            " `estate_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " `user_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `locality_key` BIGINT UNSIGNED NOT NULL, " + 
+                            " `house` VARCHAR(16) NULL, " + 
+                            " `flat` INT NULL, " + 
+                            " PRIMARY KEY (`estate_id`), " + 
+                            " INDEX `re_user_id_idx` (`user_id` ASC) VISIBLE, " + 
+                            " INDEX `re_locality_key_idx` (`locality_key` ASC) VISIBLE, " + 
+                            " CONSTRAINT `re_user_id` " + 
+                            " FOREIGN KEY (`user_id`) " + 
+                            " REFERENCES `my_bot`.`users` (`user_id`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE, " + 
+                            " CONSTRAINT `re_locality_key` " + 
+                            " FOREIGN KEY (`locality_key`) " + 
+                            " REFERENCES `my_bot`.`locations` (`locality_key`) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE); ");
 
                 await connection.query(" CREATE TABLE IF NOT EXISTS `counter` ( " + 
-                            " `counter_id` BIGINT UNSIGNED  AUTO_INCREMENT NOT NULL, " + 
+                            " `counter_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
                             " `factory_num` BIGINT UNSIGNED NULL, " + 
                             " `estate_id` BIGINT UNSIGNED NOT NULL, " + 
                             " `verified` BIGINT UNSIGNED NULL, " + 
-                            " `counter_type` BIGINT UNSIGNED NULL, " + 
+                            " `counter_type` BIGINT UNSIGNED NOT NULL, " + 
                             " PRIMARY KEY (`counter_id`), " + 
-                            " INDEX `co_estate_id_idx` (`estate_id` ASC) VISIBLE, " + 
+                            " INDEX `estate_id_idx` (`estate_id` ASC) VISIBLE, " + 
                             " INDEX `co_counter_type_idx` (`counter_type` ASC) VISIBLE, " + 
                             " CONSTRAINT `co_estate_id` " + 
                             " FOREIGN KEY (`estate_id`) " + 
@@ -175,37 +190,71 @@ class MysqlLayer {
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE); ");
 
-                await connection.query(" CREATE TABLE  IF NOT EXISTS `readings` ( " + 
+                await connection.query(" CREATE TABLE IF NOT EXISTS `readings` ( " + 
                             " `read_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
                             " `counter_id` BIGINT UNSIGNED NOT NULL, " + 
                             " `readings` BIGINT UNSIGNED NULL, " + 
                             " `time_s` BIGINT UNSIGNED NULL, " + 
                             " PRIMARY KEY (`read_id`), " + 
                             " INDEX `rd_counter_id_idx` (`counter_id` ASC) VISIBLE, " + 
-                            " INDEX `rd_time_s` (`time_s` ASC) VISIBLE, " + 
                             " CONSTRAINT `rd_counter_id` " + 
                             " FOREIGN KEY (`counter_id`) " + 
                             " REFERENCES `my_bot`.`counter` (`counter_id`) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE); ");
                 
-                await connection.query(" CREATE TABLE   IF NOT EXISTS `counter_provider` ( " + 
+                await connection.query(" CREATE TABLE IF NOT EXISTS `counter_provider` ( " + 
                             " `counter_id` BIGINT UNSIGNED NOT NULL, " + 
                             " `provider_id` BIGINT UNSIGNED NOT NULL, " + 
-                            " `account` BIGINT UNSIGNED NOT NULL, " + 
-                            " INDEX `cop_cnt_id_idx` (`counter_id` ASC) VISIBLE, " + 
-                            " INDEX `cop_prov_id_idx` (`provider_id` ASC) VISIBLE, " + 
-                            " CONSTRAINT `cop_cnt_id` " + 
+                            " `account` BIGINT UNSIGNED NULL, " + 
+                            " PRIMARY KEY (`counter_id`), " + 
+                            " INDEX `cp_provider_id_idx` (`provider_id` ASC) VISIBLE, " + 
+                            " CONSTRAINT `cp_counter_id` " + 
                             " FOREIGN KEY (`counter_id`) " + 
                             " REFERENCES `my_bot`.`counter` (`counter_id`) " + 
-                            " ON DELETE NO ACTION " + 
-                            " ON UPDATE NO ACTION, " + 
-                            " CONSTRAINT `cop_prov_id` " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE, " + 
+                            " CONSTRAINT `cp_provider_id` " + 
                             " FOREIGN KEY (`provider_id`) " + 
                             " REFERENCES `my_bot`.`providers` (`provider_id`) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE); ");
 
+                await connection.query(" CREATE TABLE IF NOT EXISTS `streets_in_localities` ( " + 
+                            " `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " `locality_key` BIGINT UNSIGNED NOT NULL, " + 
+                            " `street_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " PRIMARY KEY (`id`), " + 
+                            " INDEX `si_locality_key_idx` (`locality_key` ASC) VISIBLE, " + 
+                            " INDEX `si_street_id_idx` (`street_id` ASC) VISIBLE, " + 
+                            " CONSTRAINT `si_locality_key` " + 
+                            " FOREIGN KEY (`locality_key`) " + 
+                            " REFERENCES `my_bot`.`locations` (`locality_key`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE, " + 
+                            " CONSTRAINT `si_street_id` " + 
+                            " FOREIGN KEY (`street_id`) " + 
+                            " REFERENCES `my_bot`.`streets` (`street_id`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE); ");
+
+                await connection.query(" CREATE TABLE IF NOT EXISTS `provider_credentials` ( " + 
+                            " `user_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `provider_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `usr_login` VARCHAR(45) NULL, " + 
+                            " `usr_password` VARCHAR(45) NULL, " + 
+                            " PRIMARY KEY (`user_id`, `provider_id`), " + 
+                            " INDEX `pc_provider_id_idx` (`provider_id` ASC) VISIBLE, " + 
+                            " CONSTRAINT `pc_user_id` " + 
+                            " FOREIGN KEY (`user_id`) " + 
+                            " REFERENCES `my_bot`.`user_mail` (`user_id`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE, " + 
+                            " CONSTRAINT `pc_provider_id` " + 
+                            " FOREIGN KEY (`provider_id`) " + 
+                            " REFERENCES `my_bot`.`providers` (`provider_id`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE); ");
               
 
                 await connection.commit();

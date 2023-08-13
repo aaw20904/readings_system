@@ -1,5 +1,17 @@
-" CREATE TABLE `my_bot`.`district` ( " + 
-" `district_id` BIGINT NOT NULL AUTO_INCREMENT, " + 
-" `district` VARCHAR(45) NOT NULL, " + 
-" PRIMARY KEY (`district_id`), " + 
-" UNIQUE INDEX `district_UNIQUE` (`district` ASC) VISIBLE); "
+" CREATE TABLE IF NOT EXISTS `provider_credentials` ( " + 
+" `user_id` BIGINT UNSIGNED NOT NULL, " + 
+" `provider_id` BIGINT UNSIGNED NOT NULL, " + 
+" `usr_login` VARCHAR(45) NULL, " + 
+" `usr_password` VARCHAR(45) NULL, " + 
+" PRIMARY KEY (`user_id`, `provider_id`), " + 
+" INDEX `pc_provider_id_idx` (`provider_id` ASC) VISIBLE, " + 
+" CONSTRAINT `pc_user_id` " + 
+" FOREIGN KEY (`user_id`) " + 
+" REFERENCES `my_bot`.`user_mail` (`user_id`) " + 
+" ON DELETE CASCADE " + 
+" ON UPDATE CASCADE, " + 
+" CONSTRAINT `pc_provider_id` " + 
+" FOREIGN KEY (`provider_id`) " + 
+" REFERENCES `my_bot`.`providers` (`provider_id`) " + 
+" ON DELETE CASCADE " + 
+" ON UPDATE CASCADE); "
