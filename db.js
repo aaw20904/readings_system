@@ -66,6 +66,7 @@ class MysqlLayer {
                         " `district_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
                         " `district` VARCHAR(45) NOT NULL, " + 
                         " PRIMARY KEY (`district_id`), " + 
+                        " FULLTEXT INDEX `di_distr_sp` (`district`), " +
                         " UNIQUE INDEX `district_UNIQUE` (`district` ASC) VISIBLE); ");
 
 
@@ -73,12 +74,14 @@ class MysqlLayer {
                             "`region_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
                             "`region` VARCHAR(45) NULL,"+
                             " PRIMARY KEY (`region_id`),"+
+                            " FULLTEXT INDEX `rg_region_sp` (`region`), "+
                             " UNIQUE INDEX `region_UNIQUE` (`region` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE IF NOT EXISTS `streets` ("+
                             "`street_id` BIGINT UNSIGNED  AUTO_INCREMENT  NOT NULL,"+
                             "`street` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`street_id`), "+
+                            " FULLTEXT INDEX `str_spd` (`street`), "+
                             " UNIQUE INDEX `street_UNIQUE` (`street` ASC) VISIBLE);");
 
               /*  await connection.query("CREATE TABLE  IF NOT EXISTS `villages` ("+
@@ -97,12 +100,14 @@ class MysqlLayer {
                             "`provider_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
                             "`provider` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`provider_id`),"+
+                            " FULLTEXT INDEX `prov_spd` (`provider`), "+
                             " UNIQUE INDEX `provider_UNIQUE` (`provider` ASC) VISIBLE);");
 
                 await connection.query("CREATE TABLE IF NOT EXISTS `counter_type` ("+
                             " `counter_type` BIGINT UNSIGNED  AUTO_INCREMENT  NOT NULL, "+
                             " `descr` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`counter_type`), "+
+                            " FULLTEXT INDEX `cnt_t_spd` (`descr`), "+
                             " UNIQUE INDEX `descr_UNIQUE` (`descr` ASC) VISIBLE);");
                             ///***new */
 
@@ -110,12 +115,14 @@ class MysqlLayer {
                             " `loc_type` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
                             " `descr` VARCHAR(45) NULL, " + 
                             " PRIMARY KEY (`loc_type`), " + 
+                            " FULLTEXT INDEX `tl_spd` (`descr`)," + 
                             " UNIQUE INDEX `descr_UNIQUE` (`descr` ASC) VISIBLE); ");
 
                 await connection.query(" CREATE TABLE IF NOT EXISTS `names_of_localities` ( " + 
                             " `locality_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
                             " `locality` VARCHAR(45) NULL, " + 
                             " PRIMARY KEY (`locality_id`), " + 
+                            " FULLTEXT INDEX `nl_spd` (`locality`), "+
                             " UNIQUE INDEX `locality_UNIQUE` (`locality` ASC) VISIBLE); ");
                         
                 await connection.query(" CREATE TABLE IF NOT EXISTS locations ( " + 
@@ -222,13 +229,23 @@ class MysqlLayer {
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE); ");
 
+                await connection.query(" CREATE TABLE `my_bot`.`street_type` ( " + 
+                            " `street_type` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " `descr` VARCHAR(45) NULL, " + 
+                            " PRIMARY KEY (`street_type`), " + 
+                            " INDEX `st_descr` (`descr` ASC) VISIBLE, " + 
+                            " FULLTEXT INDEX `st_descr1` (`descr`) VISIBLE); ");
+
                 await connection.query(" CREATE TABLE IF NOT EXISTS `streets_in_localities` ( " + 
                             " `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
                             " `locality_key` BIGINT UNSIGNED NOT NULL, " + 
                             " `street_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `street_type` BIGINT UNSIGNED NOT NULL, " + 
                             " PRIMARY KEY (`id`), " + 
                             " INDEX `si_locality_key_idx` (`locality_key` ASC) VISIBLE, " + 
                             " INDEX `si_street_id_idx` (`street_id` ASC) VISIBLE, " + 
+                            " INDEX `si_street_type_idx` (`street_type` ASC) INVISIBLE, " + 
+                            " UNIQUE INDEX `si_composite` (`locality_key` ASC, `street_id` ASC, `street_type` ASC) VISIBLE, " + 
                             " CONSTRAINT `si_locality_key` " + 
                             " FOREIGN KEY (`locality_key`) " + 
                             " REFERENCES `my_bot`.`locations` (`locality_key`) " + 
@@ -237,6 +254,11 @@ class MysqlLayer {
                             " CONSTRAINT `si_street_id` " + 
                             " FOREIGN KEY (`street_id`) " + 
                             " REFERENCES `my_bot`.`streets` (`street_id`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE, " + 
+                            " CONSTRAINT `si_street_type` " + 
+                            " FOREIGN KEY (`street_type`) " + 
+                            " REFERENCES `my_bot`.`street_type` (`street_type`) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE); ");
 
