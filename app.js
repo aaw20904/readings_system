@@ -5,8 +5,9 @@ async function main() {
     let dbL = new dbLayer.MysqlLayer({basename:"my_bot", password:"65535258", user:"root", host:"localhost"});
    //await dbL._utilTest("28-ex_xml_atu.xml")
      await dbL.initDb();
-     await dbL._utilFillTypesOfStreetsLocalities();
+     //await dbL._utilFillTypesOfStreetsLocalities();
     //await dbL._utilWriteVillages();
+    //await dbL._utilFindAllTHeStreets();
    await dbL.closeDatabase();
 }
 

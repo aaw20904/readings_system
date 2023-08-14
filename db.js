@@ -524,9 +524,36 @@ class MysqlLayer {
        } finally {
          connection.release();
        }
-    
-       
-      
+    }
+    //admin`s function to fill the database
+    async _utilFindAllTHeStreets(){
+        let duplicated=0;
+        let amountOfRecords=0;
+        let connection = await this.#bdPool.getConnection()
+         let jsonData = await fs.readFile('./28-ex.json');
+         let mainObj = JSON.parse(jsonData);
+         for (const record of mainObj ) {
+            if( record.STREET_NAME[0]){
+                 let fullName = record.STREET_NAME[0];
+                 let stopSym = fullName.indexOf(".");
+                 let onlyName = fullName.slice(stopSym+1);
+                try{
+                    await connection.query(`INSERT INTO streets (street) VALUES (?)`, [onlyName]);
+                    amountOfRecords++;
+                }catch(e){
+                    if(e.errno==1062){
+                          duplicated++;
+                    }
+                  
+                    process.stdout.write(`duplicated: ${duplicated} , success: ${amountOfRecords}       \r`);
+                }                
+                 
+            //what`s a type of the street?
+            }
+           
+
+         }
+         connection.release();
     }
  
 
