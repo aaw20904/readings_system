@@ -1,17 +1,32 @@
-CREATE TABLE IF NOT EXISTS `provider_credentials` (
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `provider_id` BIGINT UNSIGNED NOT NULL,
-  `usr_login` VARCHAR(45) NULL,
-  `usr_password` VARCHAR(45) NULL,
-  PRIMARY KEY (`user_id`, `provider_id`),
-  INDEX `pc_provider_id_idx` (`provider_id` ASC) VISIBLE,
-  CONSTRAINT `pc_user_id`
-    FOREIGN KEY (`user_id`)
-    REFERENCES `my_bot`.`user_mail` (`user_id`)
+CREATE TABLE IF NOT EXISTS locations (
+  locality_key BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  locality_id BIGINT UNSIGNED NOT NULL,
+  district_id BIGINT UNSIGNED NOT NULL,
+  region_id BIGINT UNSIGNED NOT NULL,
+  loc_type BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (locality_key),
+  INDEX loc_district_id_idx (district_id ASC) VISIBLE,
+  INDEX loc_region_id_idx (region_id ASC) VISIBLE,
+  INDEX loc_loc_type_idx (loc_type ASC) VISIBLE,
+  CONSTRAINT uc_unique_combination UNIQUE (locality_id, district_id, region_id, loc_type),
+  CONSTRAINT loc_locality_id
+    FOREIGN KEY (locality_key)
+    REFERENCES my_bot.names_of_localities (locality_id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  CONSTRAINT `pc_provider_id`
-    FOREIGN KEY (`provider_id`)
-    REFERENCES `my_bot`.`providers` (`provider_id`)
+  CONSTRAINT loc_district_id
+    FOREIGN KEY (district_id)
+    REFERENCES my_bot.districts (district_id)
     ON DELETE CASCADE
-    ON UPDATE CASCADE);
+    ON UPDATE CASCADE,
+  CONSTRAINT loc_region_id
+    FOREIGN KEY (region_id)
+    REFERENCES my_bot.regions (region_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT loc_loc_type
+    FOREIGN KEY (loc_type)
+    REFERENCES my_bot.type_of_localities (loc_type)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);

@@ -118,36 +118,38 @@ class MysqlLayer {
                             " PRIMARY KEY (`locality_id`), " + 
                             " UNIQUE INDEX `locality_UNIQUE` (`locality` ASC) VISIBLE); ");
                         
-                await connection.query(" CREATE TABLE IF NOT EXISTS `locations` ( " + 
-                            " `locality_key` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
-                            " `locality_id` BIGINT UNSIGNED NOT NULL, " + 
-                            " `district_id` BIGINT UNSIGNED NOT NULL, " + 
-                            " `region_id` BIGINT UNSIGNED NOT NULL, " + 
-                            " `loc_type` BIGINT UNSIGNED NOT NULL, " + 
-                            " PRIMARY KEY (`locality_key`), " + 
-                            " INDEX `loc_district_id_idx` (`district_id` ASC) VISIBLE, " + 
-                            " INDEX `loc_region_id_idx` (`region_id` ASC) VISIBLE, " + 
-                            " INDEX `loc_loc_type_idx` (`loc_type` ASC) VISIBLE, " + 
-                            " CONSTRAINT `loc_locality_id` " + 
-                            " FOREIGN KEY (`locality_key`) " + 
-                            " REFERENCES `my_bot`.`names_of_localities` (`locality_id`) " + 
+                await connection.query(" CREATE TABLE IF NOT EXISTS locations ( " + 
+                            " locality_key BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " locality_id BIGINT UNSIGNED NOT NULL, " + 
+                            " district_id BIGINT UNSIGNED NOT NULL, " + 
+                            " region_id BIGINT UNSIGNED NOT NULL, " + 
+                            " loc_type BIGINT UNSIGNED NOT NULL, " + 
+                            " PRIMARY KEY (locality_key), " + 
+                            " INDEX loc_district_id_idx (district_id ASC) VISIBLE, " + 
+                            " INDEX loc_region_id_idx (region_id ASC) VISIBLE, " + 
+                            " INDEX loc_loc_type_idx (loc_type ASC) VISIBLE, " + 
+                            " CONSTRAINT uc_unique_combination UNIQUE (locality_id, district_id, region_id, loc_type), " + 
+                            " CONSTRAINT loc_locality_id " + 
+                            " FOREIGN KEY (locality_key) " + 
+                            " REFERENCES my_bot.names_of_localities (locality_id) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE, " + 
-                            " CONSTRAINT `loc_district_id` " + 
-                            " FOREIGN KEY (`district_id`) " + 
-                            " REFERENCES `my_bot`.`districts` (`district_id`) " + 
+                            " CONSTRAINT loc_district_id " + 
+                            " FOREIGN KEY (district_id) " + 
+                            " REFERENCES my_bot.districts (district_id) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE, " + 
-                            " CONSTRAINT `loc_region_id` " + 
-                            " FOREIGN KEY (`region_id`) " + 
-                            " REFERENCES `my_bot`.`regions` (`region_id`) " + 
+                            " CONSTRAINT loc_region_id " + 
+                            " FOREIGN KEY (region_id) " + 
+                            " REFERENCES my_bot.regions (region_id) " + 
                             " ON DELETE CASCADE " + 
                             " ON UPDATE CASCADE, " + 
-                            " CONSTRAINT `loc_loc_type` " + 
-                            " FOREIGN KEY (`loc_type`) " + 
-                            " REFERENCES `my_bot`.`type_of_localities` (`loc_type`) " + 
+                            " CONSTRAINT loc_loc_type " + 
+                            " FOREIGN KEY (loc_type) " + 
+                            " REFERENCES my_bot.type_of_localities (loc_type) " + 
                             " ON DELETE CASCADE " + 
-                            " ON UPDATE CASCADE); ")
+                            " ON UPDATE CASCADE " + 
+                            " ); ")
 
                             
                 await connection.query(" CREATE TABLE IF NOT EXISTS `real_estate` ( " + 
