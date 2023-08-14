@@ -112,7 +112,7 @@ class MysqlLayer {
                             ///***new */
 
                 await connection.query(" CREATE TABLE IF NOT EXISTS `type_of_localities` ( " + 
-                            " `loc_type` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " `loc_type` BIGINT UNSIGNED NOT NULL, " + 
                             " `descr` VARCHAR(45) NULL, " + 
                             " PRIMARY KEY (`loc_type`), " + 
                             " FULLTEXT INDEX `tl_spd` (`descr`)," + 
@@ -230,7 +230,7 @@ class MysqlLayer {
                             " ON UPDATE CASCADE); ");
 
                 await connection.query(" CREATE TABLE `my_bot`.`street_type` ( " + 
-                            " `street_type` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " `street_type` BIGINT UNSIGNED NOT NULL , " + 
                             " `descr` VARCHAR(45) NULL, " + 
                             " PRIMARY KEY (`street_type`), " + 
                             " INDEX `st_descr` (`descr` ASC) VISIBLE, " + 
@@ -487,7 +487,7 @@ class MysqlLayer {
  
     }
 
-    async _utilTest(fname){
+    async _utilTest (fname) {
         
         let xmlBuffer = await fs.readFile(fname);
         let xmlData = iconv.decode(xmlBuffer,"Windows-1251");
@@ -497,6 +497,36 @@ class MysqlLayer {
         let result = await parser.parseStringPromise(outputString);
         await fs.writeFile("28-ex.json", JSON.stringify(result.DATA.RECORD));
         console.log(new Date().toLocaleTimeString());
+    }
+
+    ////GET  DATA FROM xml file
+
+    async _utilFillTypesOfStreetsLocalities () {
+        //let jsonData = await fs.readFile('./28-ex.json');
+       //  let mainObj = JSON.parse(jsonData);
+        //
+        let connection = await this.#bdPool.getConnection();
+       try{
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (1,"м.");`);
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (2,"с.");`);
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (3,"сщ.");`);
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (4,"смт.");`);
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (5,"с/рада.");`);
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (6,"_EMPTY");`);
+
+                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (1, "вул.");`);
+                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (2, "пров.");`);
+                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (3, "пр.");`);
+                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (4, "пл.");`);
+                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (6, "_EMPTY");`);
+       } catch (e) {
+
+       } finally {
+         connection.release();
+       }
+    
+       
+      
     }
  
 

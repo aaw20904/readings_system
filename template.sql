@@ -83,7 +83,8 @@ CREATE TABLE `counter_type` (
   `counter_type` bigint unsigned NOT NULL AUTO_INCREMENT,
   `descr` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`counter_type`),
-  UNIQUE KEY `descr_UNIQUE` (`descr`)
+  UNIQUE KEY `descr_UNIQUE` (`descr`),
+  FULLTEXT KEY `cnt_t_spd` (`descr`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -107,7 +108,8 @@ CREATE TABLE `districts` (
   `district_id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `district` varchar(45) NOT NULL,
   PRIMARY KEY (`district_id`),
-  UNIQUE KEY `district_UNIQUE` (`district`)
+  UNIQUE KEY `district_UNIQUE` (`district`),
+  FULLTEXT KEY `di_distr_sp` (`district`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -134,6 +136,7 @@ CREATE TABLE `locations` (
   `region_id` bigint unsigned NOT NULL,
   `loc_type` bigint unsigned NOT NULL,
   PRIMARY KEY (`locality_key`),
+  UNIQUE KEY `uc_unique_combination` (`locality_id`,`district_id`,`region_id`,`loc_type`),
   KEY `loc_district_id_idx` (`district_id`),
   KEY `loc_region_id_idx` (`region_id`),
   KEY `loc_loc_type_idx` (`loc_type`),
@@ -164,7 +167,8 @@ CREATE TABLE `names_of_localities` (
   `locality_id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `locality` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`locality_id`),
-  UNIQUE KEY `locality_UNIQUE` (`locality`)
+  UNIQUE KEY `locality_UNIQUE` (`locality`),
+  FULLTEXT KEY `nl_spd` (`locality`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -216,7 +220,8 @@ CREATE TABLE `providers` (
   `provider_id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `provider` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`provider_id`),
-  UNIQUE KEY `provider_UNIQUE` (`provider`)
+  UNIQUE KEY `provider_UNIQUE` (`provider`),
+  FULLTEXT KEY `prov_spd` (`provider`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -297,7 +302,8 @@ CREATE TABLE `regions` (
   `region_id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `region` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`region_id`),
-  UNIQUE KEY `region_UNIQUE` (`region`)
+  UNIQUE KEY `region_UNIQUE` (`region`),
+  FULLTEXT KEY `rg_region_sp` (`region`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -311,6 +317,32 @@ LOCK TABLES `regions` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `street_type`
+--
+
+DROP TABLE IF EXISTS `street_type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `street_type` (
+  `street_type` bigint unsigned NOT NULL,
+  `descr` varchar(45) DEFAULT NULL,
+  PRIMARY KEY (`street_type`),
+  KEY `st_descr` (`descr`),
+  FULLTEXT KEY `st_descr1` (`descr`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `street_type`
+--
+
+LOCK TABLES `street_type` WRITE;
+/*!40000 ALTER TABLE `street_type` DISABLE KEYS */;
+INSERT INTO `street_type` VALUES (6,'_EMPTY'),(1,'вул.'),(4,'пл.'),(3,'пр.'),(2,'пров.');
+/*!40000 ALTER TABLE `street_type` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `streets`
 --
 
@@ -321,7 +353,8 @@ CREATE TABLE `streets` (
   `street_id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `street` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`street_id`),
-  UNIQUE KEY `street_UNIQUE` (`street`)
+  UNIQUE KEY `street_UNIQUE` (`street`),
+  FULLTEXT KEY `str_spd` (`street`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -345,11 +378,15 @@ CREATE TABLE `streets_in_localities` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `locality_key` bigint unsigned NOT NULL,
   `street_id` bigint unsigned NOT NULL,
+  `street_type` bigint unsigned NOT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `si_composite` (`locality_key`,`street_id`,`street_type`),
   KEY `si_locality_key_idx` (`locality_key`),
   KEY `si_street_id_idx` (`street_id`),
+  KEY `si_street_type_idx` (`street_type`) /*!80000 INVISIBLE */,
   CONSTRAINT `si_locality_key` FOREIGN KEY (`locality_key`) REFERENCES `locations` (`locality_key`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `si_street_id` FOREIGN KEY (`street_id`) REFERENCES `streets` (`street_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `si_street_id` FOREIGN KEY (`street_id`) REFERENCES `streets` (`street_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `si_street_type` FOREIGN KEY (`street_type`) REFERENCES `street_type` (`street_type`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -370,10 +407,11 @@ DROP TABLE IF EXISTS `type_of_localities`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `type_of_localities` (
-  `loc_type` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `loc_type` bigint unsigned NOT NULL,
   `descr` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`loc_type`),
-  UNIQUE KEY `descr_UNIQUE` (`descr`)
+  UNIQUE KEY `descr_UNIQUE` (`descr`),
+  FULLTEXT KEY `tl_spd` (`descr`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -383,6 +421,7 @@ CREATE TABLE `type_of_localities` (
 
 LOCK TABLES `type_of_localities` WRITE;
 /*!40000 ALTER TABLE `type_of_localities` DISABLE KEYS */;
+INSERT INTO `type_of_localities` VALUES (6,'_EMPTY'),(1,'м.'),(2,'с.'),(5,'с/рада.'),(4,'смт.'),(3,'сщ.');
 /*!40000 ALTER TABLE `type_of_localities` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -449,4 +488,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-08-13 20:17:34
+-- Dump completed on 2023-08-14 15:53:43
