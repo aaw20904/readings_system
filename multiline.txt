@@ -1,25 +1,18 @@
-CREATE TABLE `my_bot`.`streets_in_localities` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `locality_key` BIGINT UNSIGNED NOT NULL,
-  `street_id` BIGINT UNSIGNED NOT NULL,
-  `street_type` BIGINT UNSIGNED NOT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `si_locality_key_idx` (`locality_key` ASC) VISIBLE,
-  INDEX `si_street_id_idx` (`street_id` ASC) VISIBLE,
-  INDEX `si_street_type_idx` (`street_type` ASC) INVISIBLE,
-  UNIQUE INDEX `si_composite` (`locality_key` ASC, `street_id` ASC, `street_type` ASC) VISIBLE,
-  CONSTRAINT `si_locality_key`
-    FOREIGN KEY (`locality_key`)
-    REFERENCES `my_bot`.`locations` (`locality_key`)
+CREATE TABLE `my_bot`.`region_district` (
+  `rdi` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `region_id` BIGINT UNSIGNED NOT NULL,
+  `district_id` BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (`rdi`),
+  INDEX `rd_reg_idx` (`region_id` ASC) VISIBLE,
+  INDEX `rd_dist_idx` (`district_id` ASC) VISIBLE,
+  UNIQUE INDEX `rd_uni` (`region_id` ASC, `district_id` ASC) VISIBLE,
+  CONSTRAINT `rd_reg`
+    FOREIGN KEY (`region_id`)
+    REFERENCES `my_bot`.`regions` (`region_id`)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  CONSTRAINT `si_street_id`
-    FOREIGN KEY (`street_id`)
-    REFERENCES `my_bot`.`streets` (`street_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `si_street_type`
-    FOREIGN KEY (`street_type`)
-    REFERENCES `my_bot`.`street_type` (`street_type`)
+  CONSTRAINT `rd_dist`
+    FOREIGN KEY (`district_id`)
+    REFERENCES `my_bot`.`districts` (`district_id`)
     ON DELETE CASCADE
     ON UPDATE CASCADE);
