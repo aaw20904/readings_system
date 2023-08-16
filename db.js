@@ -474,123 +474,14 @@ class MysqlLayer {
        }
     }
     //admin`s function to fill the database
-    async _utilFindAllTHeStreets(){
-        let duplicated = 0;
-        let count = 0;
-        let amountOfRecords = 0;
-        let connection = await this.#bdPool.getConnection()
-         let jsonData = await fs.readFile('./28-ex.json');
-         let mainObj = JSON.parse(jsonData);
-         for (const record of mainObj ) {
-            count++;
-                if ( record.STREET_NAME[0]) {
-                    let fullName = record.STREET_NAME[0];
-                    let stopSym = fullName.indexOf(".");
-                    let onlyName;
-                    if(stopSym > 0){
-                       onlyName = fullName.slice(stopSym+1);
-                    }else{
-                        onlyName = fullName;
-                    }
-                    
-                    try {
-                        await connection.query(`INSERT INTO streets (street) VALUES (?)`, [onlyName]);
-                        amountOfRecords++;
-                    } catch (e) {
-                        if (e.errno == 1062) {
-                            duplicated++;
-                        } 
-                    }                
-                    process.stdout.write(`STREET duplicated: ${duplicated}, created: ${amountOfRecords}, done:${ (count / (record.length / 100))|0 } %    \r`);
-                }
-         }
-         connection.release();
-         console.log('******')
-    }
-
-    //----Admin`s utility: export names of cities into the DB:
-    //область
-    async _utilWriteRegions (filename="28-ex.json") {
-        let duplicated = 0;
-        let created =0;
-        let count=0;
-        let data;
-        try {
-             data = await fs.readFile(filename,{encoding:"utf8"});
-        } catch(e) {
-            throw new Error(e);
-        }
-        //get a connection
-        let connection = await this.#bdPool.getConnection();
-        //converting to Object
-        let mainObject = JSON.parse(data);
-       for (const element of mainObject) {
-            count++;
-            if (element.OBL_NAME[0]) {
-                ///write into DB:
-                try {
-                        await connection.query(`INSERT INTO regions (region) VALUES (?)`, [element.OBL_NAME[0]]);
-                        created++;
-                        
-                } catch(e) {
-                    //there are villages with the same name
-                     if (e.errno == 1062) {
-                            duplicated++;
-                     }
-                }
-                process.stdout.write(`REGION duplicated: ${duplicated}, created: ${created}, done:${ (count / (mainObject.length / 100))|0 } %    \r`);
-            }
-       }
-
-       connection.release();
-       console.log('******')
- 
-    }
-
-/////**************** */
- //----Admin`s utility: export names of cities into the DB:
-    //район
-    async _utilWriteDistricts (filename="28-ex.json") {
-        let duplicated = 0;
-        let created =0;
-        let count=0;
-        let data;
-        try {
-             data = await fs.readFile(filename,{encoding:"utf8"});
-        } catch(e) {
-            throw new Error(e);
-        }
-        //get a connection
-        let connection = await this.#bdPool.getConnection();
-        //converting to Object
-        let mainObject = JSON.parse(data);
-       for (const element of mainObject) {
-            count++;
-            if (element.REGION_NAME[0]) {
-                ///write into DB:
-                try {
-                        await connection.query(`INSERT INTO districts (district) VALUES (?)`, [element.REGION_NAME[0]]);
-                        created++;
-                        
-                } catch(e) {
-                    //there are villages with the same name
-                     if (e.errno == 1062) {
-                            duplicated++;
-                     }
-                }
-                process.stdout.write(`DISTRICT duplicated: ${duplicated}, created: ${created}, done:${ (count / (mainObject.length / 100))|0 } %    \r`);
-            }
-       }
-
-       connection.release();
-        console.log('******')
-    }
+    
     /////////////////////////////////////////
 
-    async _utilWriteRegionDistrictRelation(){
+    async _utilWriteRegionDistrictRelation(filename="28-ex.json"){
         let duplicated = 0;
         let created =0;
         let count=0;
+        let combinationSet = new Set();
         let data;
         try {
              data = await fs.readFile(filename,{encoding:"utf8"});
@@ -603,23 +494,45 @@ class MysqlLayer {
         let mainObject = JSON.parse(data);
        for (const element of mainObject) {
             count++;
-            if (element.REGION_NAME[0] && element.OBL_NAME[0]) {
-                ///get identifiers
-                let regIdentifier, districtIdentifier;
-
-                regIdentifier = await connection.query(`SELECT region_id FROM regions WHERE region="${element.OBL_NAME[0]}";`);
-                districtIdentifier = await connection.query(`SELECT district_id FROM districts WHERE district="${element.REGION_NAME[0]}";`)
-                ///write into DB:
-                try {
-                        await connection.query(`INSERT INTO region_district (region_id,district_id) VALUES (?,?)`, [element.REGION_NAME[0]]);
-                        created++;
-                        
-                } catch(e) {
-                    //there are villages with the same name
-                     if (e.errno == 1062) {
-                            duplicated++;
-                     }
+            if (element.REGION_NAME[0] || element.OBL_NAME[0]) {
+                if(! element.REGION_NAME[0]){
+                    element.REGION_NAME[0]="_EMPTY";
+                } if (! element.OBL_NAME[0]) {
+                    element.OBL_NAME[0] = '_EMPTY';
                 }
+                //normalize strings
+                let REG = this._normalizeString(element.REGION_NAME[0]);
+                let OBL = this._normalizeString(element.OBL_NAME[0]);
+
+                if (! combinationSet.has(`${OBL}${REG}`)) {
+                        ///get identifiers
+                        let regIdentifier, districtIdentifier;
+
+                        regIdentifier = await connection.query(`SELECT region_id FROM regions WHERE region="${OBL}";`);
+                        if (regIdentifier.length > 0) {
+                             regIdentifier = regIdentifier[0][0].region_id;
+                        }
+                       
+                        districtIdentifier = await connection.query(`SELECT district_id FROM districts WHERE district="${REG}";`)
+                        if (districtIdentifier.length > 0) {
+                            districtIdentifier = districtIdentifier[0][0].district_id;
+                        }
+                        
+                        
+                        ///write into DB:
+                        try {
+                                await connection.query(`INSERT INTO region_district (region_id,district_id) VALUES (?,?)`, [regIdentifier, districtIdentifier]);
+                                created++;
+                                
+                        } catch (e) {
+                            //there are villages with the same name
+                            if (e.errno == 1062) {
+                                    duplicated++;
+                            }
+                        }
+                        combinationSet.add(`${OBL}${REG}`);
+                }
+                
                 process.stdout.write(`duplicated: ${duplicated}, created: ${created}, done:${ (count / (mainObject.length / 100))|0 } %    \r`);
             }
        }
@@ -628,11 +541,17 @@ class MysqlLayer {
        console.log('******')
     }
    //////complex function to get all the streets districts (райони) regions (області)
-    async _utilWriteAllRegionsDistrictsStreets (filename="28-ex.json") {
+   /////****************************************************************************
+    async _utilWriteAllRegionsDistrictsStreetsLocalities (filename="28-ex.json") {
         let duplicated = 0;
         let created =0;
         let count=0;
         let data;
+        let streetSet = new Set();
+        let regionSet = new Set();
+        let obltSet = new Set(); 
+        let localitiesSet = new Set();
+
         try {
              data = await fs.readFile (filename,{encoding:"utf8"});
         } catch (e) {
@@ -646,56 +565,103 @@ class MysqlLayer {
             count++;
             ///districts - районы
             if (element.REGION_NAME[0]) {
-                ///write into DB:
-                try {
-                        await connection.query(`INSERT INTO districts (district) VALUES (?)`, [element.REGION_NAME[0]]);
-                        created++;
-                } catch(e) {
-                    //there are villages with the same name
-                     if (e.errno == 1062) {
-                            duplicated++;
-                     }
-                }
+                let tmp = this._normalizeString(element.REGION_NAME[0]);
+                    //is a record exists?
+                    if (! regionSet.has(tmp)) {
+                        ///write into DB:
+                            try {
+                                    await connection.query(`INSERT INTO districts (district) VALUES (?)`, [tmp]);
+                                    created++;
+                            } catch(e) {
+                                //there are villages with the same name
+                                if (e.errno == 1062) {
+                                        duplicated++;
+                                }
+                            }
+                            regionSet.add(tmp);
+                    }
                 
             }  if (element.OBL_NAME[0]) {
+                let tmp = this._normalizeString(element.OBL_NAME[0]);
                 ///області - regions
-                try {
-                        await connection.query(`INSERT INTO regions (region) VALUES (?)`, [element.OBL_NAME[0]]);
-                        created++;
-                        
-                } catch(e) {
-                    //there are villages with the same name
-                     if (e.errno == 1062) {
-                            duplicated++;
-                     }
-                }
+                  if(! obltSet.has(tmp)) {
+                        try {
+                                await connection.query(`INSERT INTO regions (region) VALUES (?)`, [tmp]);
+                                created++;
+                                
+                        } catch(e) {
+                            //there are villages with the same name
+                            if (e.errno == 1062) {
+                                    duplicated++;
+                            }
+                        }
+                        obltSet.add(tmp);
+                  }
                
             }   if ( element.STREET_NAME[0]) {
+                  let tmp = this._normalizeString(element.STREET_NAME[0]);
                 //streets 
-                    let fullName = element.STREET_NAME[0];
+                    let fullName = tmp;
                     let stopSym = fullName.indexOf(".");
                     let onlyName;
-                    if(stopSym > 0){
-                       onlyName = fullName.slice(stopSym+1);
-                    }else{
+                    if (stopSym > 0) {
+                       onlyName = fullName.slice(stopSym + 1);
+                    } else {
                         onlyName = fullName;
                     }
-                    
-                    try {
-                        await connection.query(`INSERT INTO streets (street) VALUES (?)`, [onlyName]);
-                        created++;
-                    } catch (e) {
-                        if (e.errno == 1062) {
-                            duplicated++;
-                        } 
-                    }                
+                    //is a record in Set?
+                    if (! streetSet.has(onlyName)) {
+
+                            try {
+                                await connection.query(`INSERT INTO streets (street) VALUES (?)`, [onlyName]);
+                                created++;
+                            } catch (e) {
+                                if (e.errno == 1062) {
+                                    duplicated++;
+                                } 
+                            }       
+                            //add a record in Set
+                            streetSet.add(onlyName);
+                    }         
                    
-                }
+            } if (element.CITY_NAME[0])  {
+                 let tmp = this._normalizeString(element.CITY_NAME[0]);
+                 //city, village, etc 
+                    let fullName = tmp;
+                    let stopSym = fullName.indexOf(".");
+                    let onlyName;
+                    if (stopSym > 0) {
+                       onlyName = fullName.slice(stopSym + 1);
+                    } else {
+                        onlyName = fullName;
+                    }
+                     //is a record in Set?
+                    if (! localitiesSet.has(onlyName)) {
+
+                           try {
+                                await connection.query(`INSERT INTO names_of_localities (locality) VALUES (?)`, [onlyName]);
+                                created++;
+                            } catch (e) {
+                                if (e.errno == 1062) {
+                                    duplicated++;
+                                } 
+                            } 
+                            localitiesSet.add(onlyName);
+                    }
+
+
+            }
 
             process.stdout.write(`ALL duplicated: ${duplicated}, created: ${created}, done:${ (count / (mainObject.length / 100))|0 } %    \r`);
        }
 
-       connection.release();
+
+        await connection.query(`INSERT INTO names_of_localities (locality) VALUES (?)`, ['_EMPTY']);
+        await connection.query(`INSERT INTO streets (street) VALUES (?)`, ['_EMPTY']);
+        await connection.query(`INSERT INTO regions (region) VALUES (?)`, ['_EMPTY']);
+        await connection.query(`INSERT INTO districts (district) VALUES (?)`, ['_EMPTY']);
+
+        connection.release();
         console.log('******')
     }
 
@@ -703,8 +669,29 @@ class MysqlLayer {
  
 
     //********************OK! tested
-    async closeDatabase(){
+    async closeDatabase () {
         return await this.#bdPool.end();
+    }
+
+    _normalizeString (str) {
+        /**the function: removes spices in begin, removes spices after first point symbol".",
+           cut anything after ",", or "(".
+           EXAMPLE:
+                before processing:    " с. Млинівка, Львівська тер.громада", " вул. Шкільна (Святошинський р-н)"
+                after processing:     "с.Млинівка",                          "вул.Шкільна "
+             */
+            // Remove spaces at the beginning of the string
+        const trimmedString = str.replace(/^\s+/, '');
+
+            // Remove spaces after a period
+        const normalizedString = trimmedString.replace(/\.(\s*)/g, '.');
+
+        // Remove everything after comma or opening parenthesis
+    const stringWithoutExtraInfo = normalizedString.split(/,|\(/)[0].trim();
+
+        return stringWithoutExtraInfo;
+
+        
     }
    
 
