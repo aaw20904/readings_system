@@ -664,17 +664,18 @@ class MysqlLayer {
         connection.release();
         console.log('******')
     }
-
+///write streets of  Kiew and Sevastopol
     async _utilWriteKiewSevastopolCities (filename) {
         let duplicated=0;
+        let written=0;
         let kiewRdi;
         let sevastopolRdi;
         let data;
         let connection = await this.#bdPool.getConnection();
-        let vulCode=1, perCode=2, plCode=4, prCode=3, otherCode=5;
+        
 
         let kievSet = new Set();
-        let sevastopolMap= new Map();
+        let sevastopolSet= new Set();
             
         try {
              data = await fs.readFile (filename,{encoding:"utf8"});
@@ -702,6 +703,7 @@ class MysqlLayer {
                     " INNER JOIN districts ON districts.district_id=region_district.district_id " + 
                     " WHERE districts.district='_EMPTY' AND regions.region='м.Севастополь';");
           sevastopolRdi=sevastopolRdi[0][0].rdi;//
+
           let kievNameCode = await connection.query("SELECT locality_id FROM names_of_localities"+
                                         " WHERE locality='Київ';");
               kievNameCode = kievNameCode[0][0].locality_id;
@@ -729,6 +731,8 @@ class MysqlLayer {
                        let parts = normStreet.split(".").map(part => part.trim());
                        //is a record exists?
                          if (! kievSet.has(`${parts[0]}${parts[1]}`)) {
+
+                               kievSet.add(`${parts[0]}${parts[1]}`)
                             ///load street/square/etc id:
                             let streetNameCode;
                             
@@ -739,6 +743,7 @@ class MysqlLayer {
                                             streetNameCode = streetNameCode[0][0].street_id;
                                             await connection.query(`INSERT INTO streets_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
                                             [kievLocalityKey, streetNameCode, 1])
+                                            written++;
                                         }catch(e){
                                           if (e.errcode==1062) {
                                             duplicated++;
@@ -751,6 +756,7 @@ class MysqlLayer {
                                             streetNameCode = streetNameCode[0][0].street_id;
                                             await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
                                             [kievLocalityKey, streetNameCode, 4])
+                                            written++
                                         }catch(e){
                                           if (e.errcode==1062) {
                                             duplicated++;
@@ -763,6 +769,7 @@ class MysqlLayer {
                                             streetNameCode = streetNameCode[0][0].street_id;
                                             await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
                                             [kievLocalityKey, streetNameCode, 2])
+                                            written++
                                         }catch(e){
                                           if (e.errcode == 1062) {
                                             duplicated++;
@@ -775,6 +782,7 @@ class MysqlLayer {
                                             streetNameCode = streetNameCode[0][0].street_id;
                                             await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
                                             [kievLocalityKey, streetNameCode, 3])
+                                            written++
                                         }catch(e){
                                           if (e.errcode==1062) {
                                             duplicated++;
@@ -787,6 +795,7 @@ class MysqlLayer {
                                             streetNameCode = streetNameCode[0][0].street_id;
                                             await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
                                             [kievLocalityKey, streetNameCode, 5])
+                                            written++
                                         }catch(e){
                                           if (e.errcode==1062) {
                                             duplicated++;
@@ -796,12 +805,103 @@ class MysqlLayer {
                                 }
                          }
                     }
+                    process.stdout.write(`ALL duplicated: ${duplicated}, created: ${written}  \r`);
+
                 } if (normilized.includes("м.Севастополь")) {
                     ///S E V A S T O P O L
-                  
+                  //is there any street?
+                  if (item.STREET_NAME[0]) {
+                    let normStreet= this._normalizeString(item.STREET_NAME[0]);
+                    //what kind of street is there? 
+                   let parts = normStreet.split(".").map(part => part.trim());
+                   //is a record exists?
+                     if (! sevastopolSet.has(`${parts[0]}${parts[1]}`)) {
+                        sevastopolSet.add(`${parts[0]}${parts[1]}`)
+                        ///load street/square/etc id:
+                        let streetNameCode;
+                        
+                            switch(parts[0]){
+                                case "вул":
+                                    try{
+                                        streetNameCode = await connection.query(`SELECT street_id FROM streets WHERE street=?`,[parts[1]]);
+                                        streetNameCode = streetNameCode[0][0].street_id;
+                                        await connection.query(`INSERT INTO streets_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                        [sevastopolLocalityKey, streetNameCode, 1])
+                                        written++;
+                                    }catch(e){
+                                      if (e.errcode==1062) {
+                                        duplicated++;
+                                      }
+                                    }
+                                break;
+                                case "пл":
+                                     try{
+                                        streetNameCode = await connection.query(`SELECT street_id FROM streets WHERE street=${parts[1]}`);
+                                        streetNameCode = streetNameCode[0][0].street_id;
+                                        await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                        [sevastopolLocalityKey, streetNameCode, 4])
+                                        written++
+                                    }catch(e){
+                                      if (e.errcode==1062) {
+                                        duplicated++;
+                                      }
+                                    }
+                                break;
+                                case "пров":
+                                     try{
+                                        streetNameCode = await connection.query(`SELECT street_id FROM streets WHERE street=${parts[1]}`);
+                                        streetNameCode = streetNameCode[0][0].street_id;
+                                        await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                        [sevastopolLocalityKey, streetNameCode, 2])
+                                        written++
+                                    }catch(e){
+                                      if (e.errcode == 1062) {
+                                        duplicated++;
+                                      }
+                                    }
+                                break;
+                                case "пр":
+                                     try{
+                                        streetNameCode = await connection.query(`SELECT street_id FROM streets WHERE street=${parts[1]}`);
+                                        streetNameCode = streetNameCode[0][0].street_id;
+                                        await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                        [sevastopolLocalityKey, streetNameCode, 3])
+                                        written++
+                                    }catch(e){
+                                      if (e.errcode==1062) {
+                                        duplicated++;
+                                      }
+                                    }
+                                break;
+                                default:
+                                     try{
+                                        streetNameCode = await connection.query(`SELECT street_id FROM streets WHERE street=${parts[0]}`);
+                                        streetNameCode = streetNameCode[0][0].street_id;
+                                        await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                        [sevastopolLocalityKey, streetNameCode, 5])
+                                        written++
+                                    }catch(e){
+                                      if (e.errcode==1062) {
+                                        duplicated++;
+                                      }
+                                    }
+                                break;
+                            }
+                     }
+                }
+                process.stdout.write(`ALL duplicated: ${duplicated}, created: ${written}  \r`);
+
                 }
 
             }
+            /*****
+            USE my_bot;
+                SELECT streets.street FROM streets_in_localities 
+                INNER JOIN streets ON streets.street_id=streets_in_localities.street_id 
+                INNER JOIN locations ON locations.locality_key=streets_in_localities.locality_key
+                INNER JOIN names_of_localities ON locations.locality_id=names_of_localities.locality_id
+                WHERE names_of_localities.locality="Севастополь" ;
+             */
 
          }
    
