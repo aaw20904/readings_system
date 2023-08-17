@@ -454,17 +454,17 @@ class MysqlLayer {
         //
         let connection = await this.#bdPool.getConnection();
        try{
-                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (1,"м.");`);
-                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (2,"с.");`);
-                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (3,"сщ.");`);
-                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (4,"смт.");`);
-                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (5,"с/рада.");`);
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (1,"м");`);
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (2,"с");`);
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (3,"сщ");`);
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (4,"смт");`);
+                await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (5,"с/рада");`);
                 await connection.query(`INSERT INTO type_of_localities (loc_type, descr) VALUES (6,"_EMPTY");`);
 
-                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (1, "вул.");`);
-                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (2, "пров.");`);
-                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (3, "пр.");`);
-                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (4, "пл.");`);
+                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (1, "вул");`);//street
+                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (2, "пров");`);
+                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (3, "пр");`);//prospect
+                await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (4, "пл");`);//square
                 await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (5, "інш");`);
                 await connection.query(`INSERT INTO street_type (street_type, descr) VALUES (6, "_EMPTY");`);
        } catch (e) {
@@ -477,7 +477,7 @@ class MysqlLayer {
     
     /////////////////////////////////////////
 
-    async _utilWriteRegionDistrictRelation(filename="28-ex.json"){
+    async _utilWriteRegionDistrictRelation (filename="28-ex.json") {
         let duplicated = 0;
         let created =0;
         let count=0;
@@ -504,7 +504,7 @@ class MysqlLayer {
                 let REG = this._normalizeString(element.REGION_NAME[0]);
                 let OBL = this._normalizeString(element.OBL_NAME[0]);
 
-                if (! combinationSet.has(`${OBL}${REG}`)) {
+                if (! combinationSet.has(`${OBL}${REG}`) && (! REG.includes("р."))) {
                         ///get identifiers
                         let regIdentifier, districtIdentifier;
 
@@ -567,7 +567,7 @@ class MysqlLayer {
             if (element.REGION_NAME[0]) {
                 let tmp = this._normalizeString(element.REGION_NAME[0]);
                     //is a record exists?
-                    if (! regionSet.has(tmp)) {
+                    if ((! regionSet.has(tmp)) && (! tmp.includes("р."))) {
                         ///write into DB:
                             try {
                                     await connection.query(`INSERT INTO districts (district) VALUES (?)`, [tmp]);
@@ -665,6 +665,147 @@ class MysqlLayer {
         console.log('******')
     }
 
+    async _utilWriteKiewSevastopolCities (filename) {
+        let duplicated=0;
+        let kiewRdi;
+        let sevastopolRdi;
+        let data;
+        let connection = await this.#bdPool.getConnection();
+        let vulCode=1, perCode=2, plCode=4, prCode=3, otherCode=5;
+
+        let kievSet = new Set();
+        let sevastopolMap= new Map();
+            
+        try {
+             data = await fs.readFile (filename,{encoding:"utf8"});
+        } catch (e) {
+            throw new Error(e);
+        }
+        let mainObj = JSON.parse(data);
+
+///insert SEvastopol
+      try{
+        await connection.query("INSERT into names_of_localities (locality) VALUES ('Севастополь')");
+      }catch(e){
+          console.log(e.errno);
+      }
+        //get identifier of a relation (region district)
+        kiewRdi = await connection.query(" SELECT  region_district.rdi FROM my_bot.region_district " + 
+                " INNER JOIN regions ON regions.region_id=region_district.region_id " + 
+                " INNER JOIN districts ON districts.district_id=region_district.district_id " + 
+                " WHERE districts.district='_EMPTY' AND regions.region='м.Київ';");
+
+        kiewRdi = kiewRdi[0][0].rdi;
+
+         sevastopolRdi = await connection.query(" SELECT  region_district.rdi FROM my_bot.region_district " + 
+                    " INNER JOIN regions ON regions.region_id=region_district.region_id " + 
+                    " INNER JOIN districts ON districts.district_id=region_district.district_id " + 
+                    " WHERE districts.district='_EMPTY' AND regions.region='м.Севастополь';");
+          sevastopolRdi=sevastopolRdi[0][0].rdi;//
+          let kievNameCode = await connection.query("SELECT locality_id FROM names_of_localities"+
+                                        " WHERE locality='Київ';");
+              kievNameCode = kievNameCode[0][0].locality_id;
+         let sevastopolNameCode = await connection.query("SELECT locality_id FROM names_of_localities"+
+                                        " WHERE locality='Севастополь';");
+                sevastopolNameCode = sevastopolNameCode[0][0].locality_id;
+          // write Kiew and Sevastopol in "locations":
+          let kievLocalityKey = await connection.query("INSERT INTO locations (loc_type, rdi, locality_id)"+
+                    " VALUES (?,?,?);", [1, kiewRdi, kievNameCode]); 
+                   kievLocalityKey = kievLocalityKey[0].insertId;
+        // write Kiew and Sevastopol in "locations":
+          let sevastopolLocalityKey = await connection.query("INSERT INTO locations (loc_type, rdi, locality_id)"+
+                    " VALUES (?,?,?);", [1, sevastopolRdi, sevastopolNameCode]); 
+                   sevastopolLocalityKey =  sevastopolLocalityKey[0].insertId;
+
+          //iterate an object
+            for ( const item of mainObj ) {
+                let normilized = this._normalizeString(item.OBL_NAME[0]);
+                ///-----K I Y I V
+                if (normilized.includes("м.Київ")) {
+                    //is there any street?
+                    if (item.STREET_NAME[0]) {
+                        let normStreet= this._normalizeString(item.STREET_NAME[0]);
+                        //what kind of street is there? 
+                       let parts = normStreet.split(".").map(part => part.trim());
+                       //is a record exists?
+                         if (! kievSet.has(`${parts[0]}${parts[1]}`)) {
+                            ///load street/square/etc id:
+                            let streetNameCode;
+                            
+                                switch(parts[0]){
+                                    case "вул":
+                                        try{
+                                            streetNameCode = await connection.query(`SELECT street_id FROM streets WHERE street=?`,[parts[1]]);
+                                            streetNameCode = streetNameCode[0][0].street_id;
+                                            await connection.query(`INSERT INTO streets_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                            [kievLocalityKey, streetNameCode, 1])
+                                        }catch(e){
+                                          if (e.errcode==1062) {
+                                            duplicated++;
+                                          }
+                                        }
+                                    break;
+                                    case "пл":
+                                         try{
+                                            streetNameCode = await connection.query(`SELECT street_id FROM streets WHERE street=${parts[1]}`);
+                                            streetNameCode = streetNameCode[0][0].street_id;
+                                            await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                            [kievLocalityKey, streetNameCode, 4])
+                                        }catch(e){
+                                          if (e.errcode==1062) {
+                                            duplicated++;
+                                          }
+                                        }
+                                    break;
+                                    case "пров":
+                                         try{
+                                            streetNameCode = await connection.query(`SELECT street_id FROM streets WHERE street=${parts[1]}`);
+                                            streetNameCode = streetNameCode[0][0].street_id;
+                                            await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                            [kievLocalityKey, streetNameCode, 2])
+                                        }catch(e){
+                                          if (e.errcode == 1062) {
+                                            duplicated++;
+                                          }
+                                        }
+                                    break;
+                                    case "пр":
+                                         try{
+                                            streetNameCode = await connection.query(`SELECT street_id FROM streets WHERE street=${parts[1]}`);
+                                            streetNameCode = streetNameCode[0][0].street_id;
+                                            await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                            [kievLocalityKey, streetNameCode, 3])
+                                        }catch(e){
+                                          if (e.errcode==1062) {
+                                            duplicated++;
+                                          }
+                                        }
+                                    break;
+                                    default:
+                                         try{
+                                            streetNameCode = await connection.query(`SELECT street_id FROM streets WHERE street=${parts[0]}`);
+                                            streetNameCode = streetNameCode[0][0].street_id;
+                                            await connection.query(`INSERT INTO streerts_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                            [kievLocalityKey, streetNameCode, 5])
+                                        }catch(e){
+                                          if (e.errcode==1062) {
+                                            duplicated++;
+                                          }
+                                        }
+                                    break;
+                                }
+                         }
+                    }
+                } if (normilized.includes("м.Севастополь")) {
+                    ///S E V A S T O P O L
+                  
+                }
+
+            }
+
+         }
+   
+
 
  
 
@@ -680,6 +821,9 @@ class MysqlLayer {
                 before processing:    " с. Млинівка, Львівська тер.громада", " вул. Шкільна (Святошинський р-н)"
                 after processing:     "с.Млинівка",                          "вул.Шкільна "
              */
+             //нормализация вырезает пробелы в начале строки,
+             //пробелы осле первой точки в строке
+             //все что идет после запятой или открывающейся скобки
             // Remove spaces at the beginning of the string
         const trimmedString = str.replace(/^\s+/, '');
 
