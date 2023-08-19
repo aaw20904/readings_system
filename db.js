@@ -307,130 +307,7 @@ class MysqlLayer {
         
 
     }
-    //--'https://overpass-api.de/api/interpreter'  , OpenStreetMap
-    //----Admin`s utility: export names of cities into the DB:
-    async _utilWriteCities(filename="cities_ua.json"){
-        let data;
-        try{
-            data = await fs.readFile(filename,{encoding:"utf8"});
-        }catch(e){
-            throw new Error(e);
-        }
-        //get a connection
-        let connection = await this.#bdPool.getConnection();
-        //converting to Object
-        let mainObject = JSON.parse(data);
-       for (const element of mainObject) {
-        ///write into DB:
-          await connection.query(`INSERT INTO cities (city) VALUES (?)`,[element.tags.name])
-       }
-
-       connection.release();
-        
-    }
-
-        //--'https://overpass-api.de/api/interpreter'  , OpenStreetMap
-    //----Admin`s utility: export names of cities into the DB:
-    async _utilWriteVillages (filename="villages_ua.json") {
-        let duplicated = 0;
-        let data;
-        try {
-            data = await fs.readFile(filename,{encoding:"utf8"});
-        } catch(e) {
-            throw new Error(e);
-        }
-        //get a connection
-        let connection = await this.#bdPool.getConnection();
-        //converting to Object
-        let mainObject = JSON.parse(data);
-       for (const element of mainObject) {
-        ///write into DB:
-            try{
-                await connection.query(`INSERT INTO villages (village) VALUES (?)`,[element.tags.name])
-            }catch(e){
-                //there are villages with the same name
-                if(e.errno == 1062){
-                    duplicated++;
-                    process.stdout.write(`duplicated: ${duplicated}        \r`);
-                }
-            }     
-       }
-       connection.release();
-    }
-
-        //--'https://overpass-api.de/api/interpreter'  , OpenStreetMap
-    //----Admin`s utility: export names of cities into the DB:
-    async _utilWriteVillagesStreets(filename="villages_streets.json"){
-        let duplicated = 0;
-        let data;
-        try {
-        data = await fs.readFile(filename,{encoding:"utf8"});
-        } catch(e) {
-            throw new Error(e);
-        }
-        //get a connection
-        let connection = await this.#bdPool.getConnection();
-        //converting to Object
-        let mainObject = JSON.parse(data);
-       for (const element of mainObject) {
-            if (element.type == "way") {
-                ///write into DB:
-                try {
-                    if(element.tags.name){
-                        await connection.query(`INSERT INTO streets (street) VALUES (?)`,[element.tags.name])
-                    }
-                    
-                } catch(e) {
-                    //there are villages with the same name
-                     if (e.errno == 1062) {
-                            duplicated++;
-                            process.stdout.write(`duplicated: ${duplicated}        \r`);
-                     }
-                }
-            }
-       }
-
-       connection.release();
- 
-    }
-
-//----Admin`s utility: export names of cities into the DB:
-    async _utilWriteCitiesStreets(filename="cities_streets.json"){
-        let duplicated = 0;
-        let data;
-        try {
-        data = await fs.readFile(filename,{encoding:"utf8"});
-        } catch(e) {
-            throw new Error(e);
-        }
-        //get a connection
-        let connection = await this.#bdPool.getConnection();
-        //converting to Object
-        let mainObject = JSON.parse(data);
-       for (const element of mainObject) {
-            if (element.type == "way") {
-                ///write into DB:
-                try {
-                    if(element.tags.name){
-                        await connection.query(`INSERT INTO streets (street) VALUES (?)`,[element.tags.name])
-                    }
-                    
-                } catch(e) {
-                    //there are villages with the same name
-                     if (e.errno == 1062) {
-                            duplicated++;
-                            process.stdout.write(`duplicated: ${duplicated}        \r`);
-                     }
-                }
-            }
-       }
-
-       connection.release();
- 
-    }
-//****  */
-
-
+    
 
     
 ////GET  DATA FROM xml file - NEW active functions!!!!!!!!!!!!!!!!!!!!!!
@@ -704,7 +581,7 @@ class MysqlLayer {
     }
    
 ///write streets of  Kiew and Sevastopol
-///Order when fill tables -5
+
     async _utilWriteKiewSevastopolCities (filename) {
         let duplicated=0;
         let written=0;
@@ -944,7 +821,7 @@ class MysqlLayer {
          }
 
 
-
+///Order when fill tables -5
          async _utilWriteLocationsAndTheirStreets (filename) {
                 let _START, _STOP;
                 _START=Number(process.argv[2]);
