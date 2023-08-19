@@ -947,8 +947,8 @@ class MysqlLayer {
 
          async _utilWriteLocationsAndTheirStreets (filename) {
                 let _START, _STOP;
-                _START=process.argv[2];
-                _STOP=process.argv[3];
+                _START=Number(process.argv[2]);
+                _STOP=Number(process.argv[3]);
              
                 let connection = await this.#bdPool.getConnection();
                 let rdi, regionId, districtId;
@@ -967,16 +967,20 @@ class MysqlLayer {
                 } catch (e) {
                     throw new Error(e);
                 }
-                let mainObj = JSON.parse(data);
-                 //497464 - the length
-                if (_STOP > mainObj.length) {
-                    _STOP= mainObj.length-1;
+                let bigArray = JSON.parse(data); 
+                  //497464 - the length
+                if (_STOP > bigArray.length) {
+                    _STOP= bigArray.length-1;
                 }
+                let mainObj = bigArray.slice(_START, _STOP);
+                bigArray=[];
+              
                 
                 //terate 
 
-                for (let idx=_START; idx < _STOP ; idx++) {
-                    record = mainObj[idx];
+                for (let record of mainObj) {
+                    count++;
+                    
                     //are OBL_NAME STREET_NAME exist?
                     if (record.OBL_NAME[0] && record.STREET_NAME[0]) {
                           //is RGION_NAME exists?
@@ -1091,8 +1095,8 @@ class MysqlLayer {
                             
 
                     }
-                    count++;
-                     process.stdout.write(`ALL duplicated: ${duplicated}, created: ${created}, done:${ (count / (mainObj.length / 100))|0 } %    \r`);
+                    
+                     process.stdout.write(`  duplicated: ${duplicated}, created: ${created}, done:${ (count / (mainObj.length / 100))|0 } %    \r`);
                 }
 
          }
