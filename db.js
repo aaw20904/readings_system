@@ -945,27 +945,38 @@ class MysqlLayer {
 
 
 
-         async _utilWriteLocationsAndTheirStreets(filename){
-
+         async _utilWriteLocationsAndTheirStreets (filename) {
+                let _START, _STOP;
+                _START=process.argv[2];
+                _STOP=process.argv[3];
+             
                 let connection = await this.#bdPool.getConnection();
-                
+                let rdi, regionId, districtId;
                 let count=0;
                 let duplicated=0;
                 let created =0;
+                let loc_type, locality_id;
                 let locationsSet = new Set();
                 let streetsInLocationsSet= new Set();
                 let data;
-                    
+                let record;
+                let street_id, street_type;
+                let locality_key 
                 try {
                     data = await fs.readFile (filename,{encoding:"utf8"});
                 } catch (e) {
                     throw new Error(e);
                 }
                 let mainObj = JSON.parse(data);
-
+                 //497464 - the length
+                if (_STOP > mainObj.length) {
+                    _STOP= mainObj.length-1;
+                }
+                
                 //terate 
 
-                for (let record of mainObj) {
+                for (let idx=_START; idx < _STOP ; idx++) {
+                    record = mainObj[idx];
                     //are OBL_NAME STREET_NAME exist?
                     if (record.OBL_NAME[0] && record.STREET_NAME[0]) {
                           //is RGION_NAME exists?
@@ -988,10 +999,13 @@ class MysqlLayer {
                           record.CITY_NAME = record.CITY_NAME[0].split(".").map(part => part.trim());
                           //record.OBL_NAME[0] = record.OBL_NAME[0].split(".").map(part => part.trim());
                         //get rdi for he {region, district} combination
-                          let rdi, regionId, districtId;
+                         
                            regionId = await connection.query(`SELECT region_id FROM regions WHERE region=?`,[record.OBL_NAME[0]]);
                            regionId = regionId[0][0].region_id;
                            districtId = await connection.query(`SELECT district_id FROM districts WHERE district=?`,[record.REGION_NAME[0]]);
+                           if(!districtId[0][0]){
+                            continue;
+                           }
                            districtId = districtId[0][0].district_id;
                            rdi = await connection.query(`SELECT rdi FROM region_district WHERE region_id=? AND district_id=?`,[regionId, districtId]);
                            if (! rdi[0][0]){
@@ -1000,7 +1014,7 @@ class MysqlLayer {
                            }
                            rdi = rdi[0][0].rdi;
                            ///select locality_id from "names_of_localities"
-                           let loc_type, locality_id;
+                          
                             //A)What kind of locality are there?
                             if (record.CITY_NAME.length == 2){
                                 loc_type = await connection.query(`SELECT loc_type FROM type_of_localities WHERE descr=?`,[record.CITY_NAME[0]]);
@@ -1023,7 +1037,7 @@ class MysqlLayer {
                             loc_type = loc_type[0][0].loc_type;
                             locality_id = locality_id[0][0].locality_id;
                             ///street type and street id
-                            let street_id, street_type;
+                           
                             if (record.STREET_NAME.length == 2){
                                 street_type = await connection.query(`SELECT street_type FROM street_type WHERE descr=?`,[record.STREET_NAME[0]]);
                                 street_id = await connection.query(`SELECT street_id FROM streets WHERE street=?`,[record.STREET_NAME[1]]);
@@ -1037,13 +1051,13 @@ class MysqlLayer {
                             street_type = street_type[0][0].street_type;
                             street_id = street_id[0][0].street_id;
                             /*------W R I T E   F I R S T   T R A N S A C T I O N  into "locations" table*/
-                            if (locationsSet.has(`${loc_type}${rdi}${locality_id}`)) {
+                             if (locationsSet.has(`${loc_type}${rdi}${locality_id}`)) {
                                 //when a record exists - go to the next iteration
                                 continue;        
                             }
                             //assign value
-                            locationsSet.add(`${loc_type}${rdi}${locality_id}`);
-                             let locality_key 
+                             locationsSet.add(`${loc_type}${rdi}${locality_id}`);
+                          
                             try{
                                 locality_key = await connection.query(`INSERT INTO locations (loc_type, rdi, locality_id) VALUES (?,?,?)`,
                                                     [loc_type, rdi, locality_id]);
@@ -1060,7 +1074,7 @@ class MysqlLayer {
                             if (streetsInLocationsSet.has(`${locality_key}${street_id}${street_type}`)) {
                                 //when a record exists - go to the next iteration
                                 continue;        
-                            }
+                            } 
                             //assign value
                             streetsInLocationsSet.add(`${locality_key}${street_id}${street_type}`);
 
