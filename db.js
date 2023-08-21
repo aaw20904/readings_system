@@ -5,6 +5,7 @@ var xml2js = require('xml2js');
 var iconv = require('iconv-lite');
 /// making database    https://data.gov.ua/dataset/a2d6c060-e7e6-4471-ac67-42cfa1742a19
 const mysqlPromise = require('mysql2/promise');
+const { cursorTo } = require('readline');
 
 class MysqlLayer {
     #bdPool;
@@ -951,18 +952,17 @@ class MysqlLayer {
                            ///select locality_id from "names_of_localities"
                           
                             //A)What kind of locality are there?
-                            if (record.CITY_NAME.length == 2){
+                            if (record.CITY_NAME.length == 2){  
+                                //when a type of locality has been recognized
                                 loc_type = await connection.query(`SELECT loc_type FROM type_of_localities WHERE descr=?`,[record.CITY_NAME[0]]);
-                                 
-                               
                                 locality_id = await connection.query(`SELECT locality_id FROM names_of_localities WHERE locality=?`,[record.CITY_NAME[1]]);
                             } else if(record.CITY_NAME[0]=="_EMPTY") {
+                                //when a street without any locality
                                 loc_type = await connection.query(`SELECT loc_type FROM type_of_localities WHERE descr="_EMPTY"`);
-                                 
                                 locality_id = await connection.query(`SELECT locality_id FROM names_of_localities WHERE locality=?`,[record.CITY_NAME[1]]);
                             } else {
-                                loc_type = await connection.query(`SELECT loc_type FROM type_of_localities WHERE descr="інш"`);
-                                 
+                                    //when a 
+                                loc_type = await connection.query(`SELECT loc_type FROM type_of_localities WHERE descr="інш"`); 
                                 locality_id = await connection.query(`SELECT locality_id FROM names_of_localities WHERE locality=?`,[record.CITY_NAME[1]]);
                             }
                             if(! locality_id[0][0] || ! loc_type[0][0]){
@@ -974,6 +974,7 @@ class MysqlLayer {
                             ///street type and street id
                            
                             if (record.STREET_NAME.length == 2){
+                                //when a street type has been recognized
                                 street_type = await connection.query(`SELECT street_type FROM street_type WHERE descr=?`,[record.STREET_NAME[0]]);
                                 street_id = await connection.query(`SELECT street_id FROM streets WHERE street=?`,[record.STREET_NAME[1]]);
                             } else {
@@ -986,46 +987,46 @@ class MysqlLayer {
                             street_type = street_type[0][0].street_type;
                             street_id = street_id[0][0].street_id;
                             /*------W R I T E   F I R S T   T R A N S A C T I O N  into "locations" table*/
-                             if (locationsSet.has(`${loc_type}${rdi}${locality_id}`)) {
-                                //when a record exists - go to the next iteration
-                                continue;        
+                             if (!locationsSet.has(`${loc_type}${rdi}${locality_id}`)) {
+                                //when a record isn`t  exists 
+                                            //assign value
+                                    locationsSet.add(`${loc_type}${rdi}${locality_id}`);
+                                
+                                    try{
+                                        locality_key = await connection.query(`INSERT INTO locations (loc_type, rdi, locality_id) VALUES (?,?,?)`,
+                                                            [loc_type, rdi, locality_id]);
+                                        created++;
+                                    } catch(e) {
+                                        if(e.errno==1062){
+                                            duplicated++;
+                                        }
+                                        errors++;
+                                        continue;
+                                    }
+                                    locality_key=locality_key[0].insertId;  
                             }
-                            //assign value
-                             locationsSet.add(`${loc_type}${rdi}${locality_id}`);
-                          
-                            try{
-                                locality_key = await connection.query(`INSERT INTO locations (loc_type, rdi, locality_id) VALUES (?,?,?)`,
-                                                    [loc_type, rdi, locality_id]);
-                                created++;
-                            } catch(e) {
-                                if(e.errno==1062){
-                                    duplicated++;
-                                }
-                                errors++;
-                                continue;
-                            }
-                            locality_key=locality_key[0].insertId;
+                            
 
                             /***----W R I T E   S E C O N D   into "streets_in_locations" */
-                            if (streetsInLocationsSet.has(`${locality_key}${street_id}${street_type}`)) {
-                                //when a record exists - go to the next iteration
-                                continue;        
+                            if (! streetsInLocationsSet.has(`${locality_key}${street_id}${street_type}`)) {
+                                //when a record isn`t  exists  //assign value
+                                       streetsInLocationsSet.add(`${locality_key}${street_id}${street_type}`);
+
+                                    try {
+                                        await connection.query(`INSERT INTO streets_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                                        [locality_key, street_id, street_type]);
+                                        created++;
+                                    } catch (e) {
+
+                                        if (e.errno == 1062) {
+                                            duplicated++;
+                                        }else{
+                                                    errors++;
+                                                }
+                                    }
                             } 
-                            //assign value
-                            streetsInLocationsSet.add(`${locality_key}${street_id}${street_type}`);
-
-                            try {
-                                await connection.query(`INSERT INTO streets_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
-                                                [locality_key, street_id, street_type]);
-                                created++;
-                            } catch (e) {
-
-                                if (e.errno == 1062) {
-                                    duplicated++;
-                                }else{
-                                            errors++;
-                                          }
-                            }
+                            
+                          
                             
 
                     }
@@ -1034,7 +1035,171 @@ class MysqlLayer {
                 }
 
          }
+   /////modified!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   async _utilWriteLocationsAndTheirStreetsAutomatically (filename) {
+     
+    let connection = await this.#bdPool.getConnection();
+    let rdi, regionId, districtId;
+    let errors=0;
+    let count=0;
+    let duplicated=0;
+    let created =0;
+    let loc_type, locality_id;
+    let locationsSet = new Set();
+    let streetsInLocationsSet= new Set();
+    let data;
+     let stepOfArray=50000;
+     let startIndOfArray=0;
+    let street_id, street_type;
+    let locality_key 
+    try {
+        data = await fs.readFile (filename,{encoding:"utf8"});
+    } catch (e) {
+        throw new Error(e);
+    }
+    let bigArray = JSON.parse(data); 
+      //497464 - the length
    
+      for(let stopIndex=stepOfArray; stopIndex <= 497464; stopIndex += stepOfArray){
+        //extract slice
+         let mainObj = bigArray.slice(startIndOfArray, stopIndex );
+         startIndOfArray += stepOfArray;
+         stopIndex += startIndOfArray;
+            
+                //iterate 
+
+                for (let record of mainObj) {
+                    count++;
+                    
+                    //are OBL_NAME STREET_NAME exist?
+                    if (record.OBL_NAME[0] && record.STREET_NAME[0]) {
+                        //is RGION_NAME exists?
+                        if (! record.REGION_NAME[0]) {
+                            //when not - assign an empty constant 
+                            record.REGION_NAME[0]="_EMPTY";
+                        } 
+                        //is a CITY_NAME exists?
+                        if (! record.CITY_NAME[0]) {
+                            //when not - assign an empty constant
+                            record.CITY_NAME[0]="_EMPTY";
+                        } 
+                        ///normalize STREET_NAME, CITY_NAME, OBL_NAME
+                        record.OBL_NAME[0] = this._normalizeString(record.OBL_NAME[0]);
+                        record.CITY_NAME[0] = this._normalizeString(record.CITY_NAME[0]);
+                        record.STREET_NAME[0] = this._normalizeString(record.STREET_NAME[0]);
+                        record.REGION_NAME[0] = this._normalizeString(record.REGION_NAME[0]);
+                        //split by the point "." symbol into two (or one) Array(s)
+                        record.STREET_NAME = record.STREET_NAME[0].split(".").map(part => part.trim());
+                        record.CITY_NAME = record.CITY_NAME[0].split(".").map(part => part.trim());
+                        //record.OBL_NAME[0] = record.OBL_NAME[0].split(".").map(part => part.trim());
+                        //get rdi for he {region, district} combination
+                        
+                        regionId = await connection.query(`SELECT region_id FROM regions WHERE region=?`,[record.OBL_NAME[0]]);
+                        regionId = regionId[0][0].region_id;
+                        districtId = await connection.query(`SELECT district_id FROM districts WHERE district=?`,[record.REGION_NAME[0]]);
+                        if(!districtId[0][0]){
+                            continue;
+                        }
+                        districtId = districtId[0][0].district_id;
+                        rdi = await connection.query(`SELECT rdi FROM region_district WHERE region_id=? AND district_id=?`,[regionId, districtId]);
+                        if (! rdi[0][0]){
+                            //when RDI abscent - go to the next iteration
+                            continue;
+                        }
+                        rdi = rdi[0][0].rdi;
+                        ///select locality_id from "names_of_localities"
+                        
+                            //A)What kind of locality are there?
+                            if (record.CITY_NAME.length == 2){  
+                                //when a type of locality has been recognized
+                                loc_type = await connection.query(`SELECT loc_type FROM type_of_localities WHERE descr=?`,[record.CITY_NAME[0]]);
+                                locality_id = await connection.query(`SELECT locality_id FROM names_of_localities WHERE locality=?`,[record.CITY_NAME[1]]);
+                            } else if(record.CITY_NAME[0]=="_EMPTY") {
+                                //when a street without any locality
+                                loc_type = await connection.query(`SELECT loc_type FROM type_of_localities WHERE descr="_EMPTY"`);
+                                locality_id = await connection.query(`SELECT locality_id FROM names_of_localities WHERE locality=?`,[record.CITY_NAME[1]]);
+                            } else {
+                                    //when a 
+                                loc_type = await connection.query(`SELECT loc_type FROM type_of_localities WHERE descr="інш"`); 
+                                locality_id = await connection.query(`SELECT locality_id FROM names_of_localities WHERE locality=?`,[record.CITY_NAME[1]]);
+                            }
+                            if(! locality_id[0][0] || ! loc_type[0][0]){
+                                continue
+                            }
+
+                            loc_type = loc_type[0][0].loc_type;
+                            locality_id = locality_id[0][0].locality_id;
+                            ///street type and street id
+                        
+                            if (record.STREET_NAME.length == 2){
+                                //when a street type has been recognized
+                                street_type = await connection.query(`SELECT street_type FROM street_type WHERE descr=?`,[record.STREET_NAME[0]]);
+                                street_id = await connection.query(`SELECT street_id FROM streets WHERE street=?`,[record.STREET_NAME[1]]);
+                            } else {
+                                street_type = await connection.query(`SELECT street_type FROM street_type WHERE descr="інш"`);
+                                street_id = await connection.query(`SELECT street_id FROM streets WHERE street=?`,[record.STREET_NAME[0]]);
+                            }
+                            if(!  street_type[0][0] || ! street_id[0][0]){
+                                continue;
+                            }
+                            street_type = street_type[0][0].street_type;
+                            street_id = street_id[0][0].street_id;
+                            /*------W R I T E   F I R S T   T R A N S A C T I O N  into "locations" table*/
+                            if (!locationsSet.has(`${loc_type}${rdi}${locality_id}`)) {
+                                //when a record isn`t  exists 
+                                            //assign value
+                                    locationsSet.add(`${loc_type}${rdi}${locality_id}`);
+                                
+                                    try{
+                                        locality_key = await connection.query(`INSERT INTO locations (loc_type, rdi, locality_id) VALUES (?,?,?)`,
+                                                            [loc_type, rdi, locality_id]);
+                                        created++;
+                                    } catch(e) {
+                                        if(e.errno==1062){
+                                            duplicated++;
+                                        }
+                                        errors++;
+                                        continue;
+                                    }
+                                    locality_key=locality_key[0].insertId;  
+                            }
+                            
+
+                            /***----W R I T E   S E C O N D   into "streets_in_locations" */
+                            if (! streetsInLocationsSet.has(`${locality_key}${street_id}${street_type}`)) {
+                                //when a record isn`t  exists  //assign value
+                                    streetsInLocationsSet.add(`${locality_key}${street_id}${street_type}`);
+
+                                    try {
+                                        await connection.query(`INSERT INTO streets_in_localities (locality_key, street_id, street_type) VALUES (?,?,?)`,
+                                                        [locality_key, street_id, street_type]);
+                                        created++;
+                                    } catch (e) {
+
+                                        if (e.errno == 1062) {
+                                            duplicated++;
+                                        }else{
+                                                    errors++;
+                                                }
+                                    }
+                            } 
+                            
+                        
+                            
+
+                    }
+                    
+                    process.stdout.write(`err:${errors}  duplicated: ${duplicated}, created: ${created}, done:${ (count / (bigArray.length / 100))|0 } %    \r`);
+                }
+
+      }
+   
+  
+  
+
+
+}
+
 
 
  

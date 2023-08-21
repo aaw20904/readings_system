@@ -17,12 +17,12 @@ async function main() {
           console.log("Parce Streets, localities, regions, districts");
          await dbL._utilWriteAllRegionsDistrictsStreetsLocalities();
           console.log("Write relations REGION->DISTRICT..");
-          await dbL._utilWriteRegionDistrictRelation();
-        // console.log("write locations -locality (and it`s streets) region dstrict ");
-        // await dbL._utilWriteKiewSevastopolCities("28-ex.json")
+         await dbL._utilWriteRegionDistrictRelation();
+         console.log("write locations -locality (and it`s streets) region dstrict ");
+        await dbL._utilWriteKiewSevastopolCities("28-ex.json")
    }
- // await dbL._utilWriteLocationsAndTheirStreets("28-ex.json");
- await dbL._utilWriteKiewSevastopolCities("28-ex.json")
+  await dbL._utilWriteLocationsAndTheirStreets("28-ex.json");
+
    await dbL.closeDatabase();
 }
 

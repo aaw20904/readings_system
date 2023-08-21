@@ -1,0 +1,10 @@
+SELECT street_type.descr, streets.street FROM locations 
+INNER JOIN type_of_localities ON type_of_localities.loc_type=locations.loc_type
+inner join region_district ON region_district.rdi=locations.rdi
+inner join regions ON regions.region_id=region_district.region_id
+inner join districts ON districts.district_id=region_district.district_id
+inner join names_of_localities ON names_of_localities.locality_id=locations.locality_id
+inner join streets_in_localities ON streets_in_localities.locality_key=locations.locality_key
+inner join street_type ON street_type.street_type=streets_in_localities.street_type
+inner join streets ON streets.street_id=streets_in_localities.street_id
+ where names_of_localities.locality="Хрещатик" and type_of_localities.loc_type=2 ; 
