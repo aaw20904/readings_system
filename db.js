@@ -1037,7 +1037,7 @@ class MysqlLayer {
          }
    /////modified!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    async _utilWriteLocationsAndTheirStreetsAutomatically (filename) {
-     
+     let startTimeStamp = Date.now();
     let connection = await this.#bdPool.getConnection();
     let rdi, regionId, districtId;
     let errors=0;
@@ -1048,7 +1048,8 @@ class MysqlLayer {
     let locationsSet = new Set();
     let streetsInLocationsSet= new Set();
     let data;
-     let stepOfArray=50000;
+    let stage=0;
+     let stepOfArray=10000;
      let startIndOfArray=0;
     let street_id, street_type;
     let locality_key 
@@ -1060,11 +1061,13 @@ class MysqlLayer {
     let bigArray = JSON.parse(data); 
       //497464 - the length
    
-      for(let stopIndex=stepOfArray; stopIndex <= 497464; stopIndex += stepOfArray){
-        //extract slice
+      for(let stopIndex=0; stopIndex <= (bigArray.length+12000); stopIndex += stepOfArray){
+        stage++;
+          let locationsSet = new Set();
+            let streetsInLocationsSet= new Set();
+            //extract slice
          let mainObj = bigArray.slice(startIndOfArray, stopIndex );
-         startIndOfArray += stepOfArray;
-         stopIndex += startIndOfArray;
+         
             
                 //iterate 
 
@@ -1189,14 +1192,17 @@ class MysqlLayer {
 
                     }
                     
-                    process.stdout.write(`err:${errors}  duplicated: ${duplicated}, created: ${created}, done:${ (count / (bigArray.length / 100))|0 } %    \r`);
+                    process.stdout.write(`stage:${stage} err:${errors}  duplicated: ${duplicated}, created: ${created}, done:${ (count / (bigArray.length / 100))|0 } %    \r`);
                 }
+                startIndOfArray += stepOfArray;
+                 stopIndex += stepOfArray;
+                 mainObj=[];
+                 locationsSet=null;
+                 streetsInLocationsSet=null;
 
       }
    
-  
-  
-
+  console.log(`Done by ${(Date.now()-startTimeStamp)/1000} seconds`);
 
 }
 
