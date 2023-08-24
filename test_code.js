@@ -56,6 +56,8 @@ async function readIndexTable(fileDescriptor){
       let tableSizeBuf = Buffer.allocUnsafe(8);
       await fileDescriptor.read(tableSizeBuf, 0, 8, 0);
     let tableSize = tableSizeBuf.readBigUInt64BE(0);
+
+    ///all the index table incluides array size and offset to data
     let tableBuffer = Buffer.allocUnsafe(Number(tableSize));
       //read all the table
     await fileDescriptor.read(tableBuffer,0, Number(tableSize), 0);
@@ -69,7 +71,12 @@ async function readAndDecodeItem (fileDescryptor, indexTable=Buffer.allocUnsafe(
                                  arrayForReading=Buffer.allocUnsafe(1), numberOfItem=1 ) {
                                     try {
                                           let offsetOfData = indexTable.readBigUInt64BE(0);
-                                          const firstIndexOffset = BigInt(8);
+                                          let amountOfCells = Number(indexTable.readBigUInt64BE(8));
+                                          const firstIndexOffset = BigInt(16);
+                                          //when an index out of range of an Array
+                                           if (numberOfItem >= amountOfCells) {
+                                                  return null;
+                                            }
                                           let offsetOfItem, sizeOfItem;
                                           //read in according to item`s number
                                           offsetOfItem = offsetOfData + indexTable.readBigUInt64BE(Number(firstIndexOffset + BigInt(numberOfItem*16)));
@@ -100,13 +107,15 @@ FILE:FORMAT:
 
 
 function serializeArray(inpArray){
+  let amountOfCells = Buffer.allocUnsafe(8);
+  amountOfCells.writeBigUint64BE(BigInt(inpArray.length));
   let outputData;
   ///array for binary repr of cells
   let offsetsAndSizesOfCells =[];
   ///array of offset+size
   let binaryCellsRepresentations= [];
-   //include the size of  first parameter
-  let offsetOfDataBlock = 8;
+   //include the size of  first parameter andd size
+  let offsetOfDataBlock = 16;
   //pointer to a cell 
   let relativePointer = 0;
   let idx=0
@@ -138,6 +147,7 @@ function serializeArray(inpArray){
 
     outputData = Buffer.concat([
       offsetDataOfBlockBinary,
+      amountOfCells,
       ...offsetsAndSizesOfCells,
       ...binaryCellsRepresentations
     ]);
@@ -150,13 +160,24 @@ function serializeArray(inpArray){
 ///let myData = serializeArray([{a:123},{b:456},{c:789}]);
 
 async function main(){
- let binaryRepr =  serializeArray([{one:"Marry"},{two:"has"},{three:"a little"},{four:"lamb"}]);
+// let binaryRepr =  serializeArray([{one:"Marry"},{two:"has"},{three:"a little"},{four:"lamb"}]);
  // await writeBinaryFile("myfile",binaryRepr);
   let mainBuffer = Buffer.allocUnsafe(1024);
   let fileDescr = await fs.promises.open("myfile","r");
   let table = await readIndexTable(fileDescr);
   let item = await readAndDecodeItem(fileDescr,table,mainBuffer,1);
+   await fileDescr.close();
+  console.log(item);
 
 }
 
-main();
+async function convertJsonFileToIndexedArrayFile(jsonFileName, indexedArrayFileName) {
+  let jsonBuffer = await fs.promises.readFile(jsonFileName,{encoding:"utf-8"});
+  let arrayOfData = JSON.parse(jsonBuffer);
+  jsonBuffer = null;
+  let bufferToWrite = serializeArray(arrayOfData);
+  arrayOfData = null;
+  await writeBinaryFile(indexedArrayFileName, bufferToWrite);
+}
+
+module.exports={convertJsonFileToIndexedArrayFile,readAndDecodeItem, readIndexTable}
