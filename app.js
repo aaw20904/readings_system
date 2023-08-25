@@ -16,14 +16,14 @@ async function main() {
    if (process.argv[2]=="step_2") {
        console.log("Init database..");
        await dbL.initDb();
-       //  await dbL._utilFillTypesOfStreetsLocalities();
-         // console.log("Parce Streets, localities, regions, districts");
-        // await dbL._utilWriteAllRegionsDistrictsStreetsLocalitiesFromBinary();
+         await dbL._utilFillTypesOfStreetsLocalities();
+          console.log("Parce Streets, localities, regions, districts");
+         await dbL._utilWriteAllRegionsDistrictsStreetsLocalitiesFromBinary();
         
-          //console.log("Write relations REGION->DISTRICT..");
-         //await dbL._utilWriteRegionDistrictRelationFromBinary();
-         /*  console.log("write locations -locality (and it`s streets) region dstrict ");*/
-        //await dbL._utilWriteKiewSevastopolCitiesFromBinary();
+          console.log("Write relations REGION->DISTRICT..");
+         await dbL._utilWriteRegionDistrictRelationFromBinary();
+           console.log("write locations -locality (and it`s streets) region dstrict ");
+        await dbL._utilWriteKiewSevastopolCitiesFromBinary();
         await dbL.closeDatabase();
        return
    }
