@@ -1,6 +1,17 @@
 
 const fs = require('fs');
-
+/****
+FILE:FORMAT:
+-------begin-of-file--------
+(0)  Uint64BE offsetOfDataBlock;   //pointer to the begin of data
+(8)  uint64BE amountOfCells;      
+(16) uint64BE offsetOfCell_0; uint64BE sizeOfCell_0;
+(32) uint64BE offsetOfCell_1; uint64BE sizeOfCell_1;
+...
+ uint64BE offsetOfCell_last; uint64BE offsetOfCell_last;
+  raw_binary_JSON_data;
+---end-of-file--------------
+ */
 
 const stream = require('stream');
 
@@ -106,7 +117,7 @@ FILE:FORMAT:
 
 
 
-function serializeArray(inpArray){
+function serializeArray (inpArray) {
   let amountOfCells = Buffer.allocUnsafe(8);
   amountOfCells.writeBigUint64BE(BigInt(inpArray.length));
   let outputData;
@@ -118,7 +129,7 @@ function serializeArray(inpArray){
   let offsetOfDataBlock = 16;
   //pointer to a cell 
   let relativePointer = 0;
-  let idx=0
+  let idx = 0;
   for (; idx < inpArray.length; idx++) {
       ///prepare buffers
 

@@ -1,4 +1,0 @@
-" SELECT  region_district.rdi FROM my_bot.region_district " + 
-" INNER JOIN regions ON regions.region_id=region_district.region_id " + 
-" INNER JOIN districts ON districts.district_id=region_district.district_id " + 
-" WHERE districts.district="_EMPTY" AND regions.region="м.Київ";
