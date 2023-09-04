@@ -102,7 +102,11 @@ class MysqlLayer {
                             "`provider` VARCHAR(45) NULL, "+
                             " PRIMARY KEY (`provider_id`),"+
                             " FULLTEXT INDEX `prov_spd` (`provider`), "+
-                            " UNIQUE INDEX `provider_UNIQUE` (`provider` ASC) VISIBLE);");
+                            " UNIQUE INDEX `provider_UNIQUE` (`provider` ASC) VISIBLE),"+
+                            " FOREIGN KEY (`providers_region_id`) " + 
+                            " REFERENCES `my_bot`.`regions` (`region_id`) " + 
+                            " ON DELETE CASCADE " + 
+                            " ON UPDATE CASCADE;");
 
                 await connection.query("CREATE TABLE IF NOT EXISTS `counter_type` ("+
                             " `counter_type` BIGINT UNSIGNED  AUTO_INCREMENT  NOT NULL, "+
