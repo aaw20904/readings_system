@@ -1,0 +1,13 @@
+" CREATE TABLE `my_bot`.`providers` ( " + 
+" `provider_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+" `region_id` BIGINT UNSIGNED NOT NULL, " + 
+" `provider` VARCHAR(64) NULL, " + 
+" PRIMARY KEY (`provider_id`), " + 
+" UNIQUE INDEX `provider_unique` (`provider` ASC, `region_id` ASC) INVISIBLE, " + 
+" FULLTEXT INDEX `provider_text` (`provider`) INVISIBLE, " + 
+" INDEX `pr_region_id_idx` (`region_id` ASC) VISIBLE, " + 
+" CONSTRAINT `pr_region_id` " + 
+" FOREIGN KEY (`region_id`) " + 
+" REFERENCES `my_bot`.`regions` (`region_id`) " + 
+" ON DELETE CASCADE " + 
+" ON UPDATE CASCADE); "

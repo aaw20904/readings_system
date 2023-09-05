@@ -97,16 +97,19 @@ class MysqlLayer {
                             " PRIMARY KEY (`city_id`),"+
                             " UNIQUE INDEX `city_UNIQUE` (`city` ASC) VISIBLE);");*/
 
-                await connection.query("CREATE TABLE  IF NOT EXISTS `providers` ("+
-                            "`provider_id` BIGINT UNSIGNED AUTO_INCREMENT  NOT NULL,"+
-                            "`provider` VARCHAR(45) NULL, "+
-                            " PRIMARY KEY (`provider_id`),"+
-                            " FULLTEXT INDEX `prov_spd` (`provider`), "+
-                            " UNIQUE INDEX `provider_UNIQUE` (`provider` ASC) VISIBLE),"+
-                            " FOREIGN KEY (`providers_region_id`) " + 
+                await connection.query(" CREATE TABLE `my_bot`.`providers` ( " + 
+                            " `provider_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, " + 
+                            " `region_id` BIGINT UNSIGNED NOT NULL, " + 
+                            " `provider` VARCHAR(64) NULL, " + 
+                            " PRIMARY KEY (`provider_id`), " + 
+                            " UNIQUE INDEX `provider_unique` (`provider` ASC, `region_id` ASC) INVISIBLE, " + 
+                            " FULLTEXT INDEX `provider_text` (`provider`) INVISIBLE, " + 
+                            " INDEX `pr_region_id_idx` (`region_id` ASC) VISIBLE, " + 
+                            " CONSTRAINT `pr_region_id` " + 
+                            " FOREIGN KEY (`region_id`) " + 
                             " REFERENCES `my_bot`.`regions` (`region_id`) " + 
                             " ON DELETE CASCADE " + 
-                            " ON UPDATE CASCADE;");
+                            " ON UPDATE CASCADE); ");
 
                 await connection.query("CREATE TABLE IF NOT EXISTS `counter_type` ("+
                             " `counter_type` BIGINT UNSIGNED  AUTO_INCREMENT  NOT NULL, "+
