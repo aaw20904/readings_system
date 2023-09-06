@@ -225,6 +225,7 @@ class MysqlLayer {
                             " `counter_id` BIGINT UNSIGNED NOT NULL, " + 
                             " `readings` BIGINT UNSIGNED NULL, " + 
                             " `time_s` BIGINT UNSIGNED NULL, " + 
+                            " `status` INT UNSIGNED DEFAULT 0, "+
                             " PRIMARY KEY (`read_id`), " + 
                             " INDEX `rd_counter_id_idx` (`counter_id` ASC) VISIBLE, " + 
                             " CONSTRAINT `rd_counter_id` " + 
